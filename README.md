@@ -1,6 +1,6 @@
 # dsh-closure-pet
 
-《明日方舟》可露希尔（自走棋皮肤 `ac_s_closur_spine`）的 DeepSeek Harness 桌宠插件：Spine 3.8 实时渲染、状态驱动动画、像素气泡、余额与花费提示。
+《明日方舟》可露希尔卫戍协议皮肤的 DeepSeek Harness 桌宠插件：动画交互、像素气泡、余额与花费提示。
 
 > 仅个人自用。Spine 模型、贴图、音效均来自游戏包，**不得二次分发**。字体使用 Ark Pixel（SIL OFL 1.1，见 `assets/fonts/OFL.txt`）。
 
@@ -18,11 +18,29 @@ cordis.patch.yml              bundle 入口
 
 ## 安装
 
-在 profile 的 `package.json` 里加依赖，并把它放进 `dsh.profile.bundles`：
+### 从仓库安装（推荐）
+
+在 Plugins → Add plugin 里填仓库地址：
+
+```
+https://github.com/fengshiyangrouguan/dsh-closure-pet
+```
+
+或手动在 profile 的 `package.json` 加依赖，并把插件名加进 `dsh.profile.bundles`：
 
 ```json
-"dsh-closure-pet": "link:E:/project/closure-pet/plugin/dsh-closure-pet"
+"dsh-closure-pet": "github:fengshiyangrouguan/dsh-closure-pet"
 ```
+
+### 本地开发安装
+
+```json
+"dsh-closure-pet": "link:<本地路径>/dsh-closure-pet"
+```
+
+同样需要把 `dsh-closure-pet` 放进 `dsh.profile.bundles`。
+
+> ⚠️ 本仓库随包带有游戏素材（Spine 模型 / 音效），请把仓库设为 **private**，不要公开分发，详见 `NOTICE.md`。
 
 ## 开发
 

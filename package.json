@@ -16,9 +16,17 @@
     "icon.png",
     "cordis.patch.yml",
     "README.md",
-    "NOTICE.md"
+    "NOTICE.md",
+    "LICENSE"
   ],
-  "keywords": ["dsh-plugin", "desktop-pet", "spine", "arknights", "closure"],
+  "keywords": [
+    "dsh-plugin",
+    "desktop-pet",
+    "spine",
+    "arknights",
+    "closure",
+    "pixel-art"
+  ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -27,9 +35,14 @@
   "engines": {
     "dsh": ">=0.2.0"
   },
-  "license": "MIT",
-  "author": "DeepSeek AI",
   "repository": {
     "type": "git",
-    "url": "
+    "url": "git+https://github.com/fengshiyangrouguan/dsh-closure-pet.git"
+  },
+  "homepage": "https://github.com/fengshiyangrouguan/dsh-closure-pet#readme",
+  "bugs": {
+    "url": "https://github.com/fengshiyangrouguan/dsh-closure-pet/issues"
+  },
+  "license": "MIT",
+  "author": "FSYRG"
 }
