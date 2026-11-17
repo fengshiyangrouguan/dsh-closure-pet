@@ -62,6 +62,15 @@ https://github.com/fengshiyangrouguan/dsh-closure-pet
 
 触发源：`agent/assistant-stream`、`tools/result`、`agent/error`、`agent/status`、`session/event`（`assistant/message` 计费、`turn/end` 结束）、账户余额（60s 轮询）。
 
+## 开屏演出
+
+首次拿到 `/state` 后延迟 **10 秒**（`localStorage['dshcl-startup-delay']` 可改），随后**排队等待空闲**再播放，不打断正在进行的思考/输出：
+
+1. 峰谷：谷价播 `Special_A`、峰价播 `Sad_Begin`，并出对应文案
+2. 间隔 2 秒（`dshcl-startup-gap`）后，余额偏低再播 `Sad_Begin` + 催款文案
+
+排队期间若一直在思考/说话，演出会一直等到下一次回到常态（`syncAnimation` 的空闲时机）。
+
 ## 设置
 
 设置面板（右键桌宠 → 设置）：镜像、大小、气泡、透明度、音效开关与音量。持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
