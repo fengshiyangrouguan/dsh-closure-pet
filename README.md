@@ -2,7 +2,7 @@
 
 《明日方舟》可露希尔卫戍协议皮肤的 DeepSeek Harness 桌宠插件：动画交互、像素气泡、余额与花费提示。
 
-> 仅个人自用。Spine 模型、贴图、音效均来自游戏包，**不得二次分发**。字体使用 Ark Pixel（SIL OFL 1.1，见 `assets/fonts/OFL.txt`）。
+> 仅个人自用。**不得二次分发**。字体使用 Ark Pixel（SIL OFL 1.1，见 `assets/fonts/OFL.txt`）。
 
 ## 结构
 
