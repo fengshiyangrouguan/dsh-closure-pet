@@ -35,10 +35,10 @@
   var INTERACT_SPLIT = 2.10
   // 从 Interact 回到 Idle 的混合时长（秒）：短到看不出叠影，又能消掉硬切的顿感
   var INTERACT_MIX = 0.18
-  // 开屏演出：首屏 5s 后强制插播一遍「峰谷 → 余额」（localStorage 可覆盖等待与空档）
+  // 开屏演出：首屏 10s 后强制插播一遍「峰谷 → 余额」（localStorage 可覆盖等待与空档）
   var STARTUP_DELAY = (function () {
     var v = Number(localStorage.getItem('dshcl-startup-delay'))
-    return isFinite(v) && v >= 0 ? v : 5000
+    return isFinite(v) && v >= 0 ? v : 10000
   })()
   var STARTUP_GAP = (function () {
     var v = Number(localStorage.getItem('dshcl-startup-gap'))

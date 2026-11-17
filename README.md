@@ -64,7 +64,7 @@ https://github.com/fengshiyangrouguan/dsh-closure-pet
 
 ## 开屏演出
 
-首次拿到 `/state` 后等待 **5 秒**（`localStorage['dshcl-startup-delay']` 可改），随后**强制插播**一遍，即使此刻正在思考或输出也会被打断：
+首次拿到 `/state` 后等待 **10 秒**（`localStorage['dshcl-startup-delay']` 可改），随后**强制插播**一遍，即使此刻正在思考或输出也会被打断：
 
 1. 峰谷：谷价播 `Special_A`、峰价播 `Sad_Begin`，并出对应文案
 2. 间隔 2 秒（`dshcl-startup-gap`）后，余额偏低再播 `Sad_Begin` + 催款文案
