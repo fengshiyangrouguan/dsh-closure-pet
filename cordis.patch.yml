@@ -1,0 +1,5 @@
+# dsh-closure-pet — Cordis bundle patch
+# 把本插件作为一行插入 desktop / web profile 的配置树。
+- insert:
+    - id: dsh-closure-pet
+      name: dsh-closure-pet

@@ -1,0 +1,35 @@
+{
+  "name": "dsh-closure-pet",
+  "version": "1.0.0",
+  "private": true,
+  "description": "可露希尔桌宠：豪堪小动画、余额与花费提示",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./icon": "./icon.png"
+  },
+  "icon": "./icon.png",
+  "files": [
+    "lib",
+    "assets",
+    "icon.png",
+    "cordis.patch.yml",
+    "README.md",
+    "NOTICE.md"
+  ],
+  "keywords": ["dsh-plugin", "desktop-pet", "spine", "arknights", "closure"],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.0"
+  },
+  "license": "MIT",
+  "author": "DeepSeek AI",
+  "repository": {
+    "type": "git",
+    "url": "
+}
