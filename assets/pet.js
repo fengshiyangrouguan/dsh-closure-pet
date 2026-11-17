@@ -35,12 +35,10 @@
   var INTERACT_SPLIT = 2.10
   // 从 Interact 回到 Idle 的混合时长（秒）：短到看不出叠影，又能消掉硬切的顿感
   var INTERACT_MIX = 0.18
-  // 开屏演出：等客户端首屏稳定后再播，且不管当前是否在思考/输出都强制播一遍。
-  //   STARTUP_DELAY —— 首屏到开演之间的等待（默认 10s，可被 localStorage 覆盖）
-  //   STARTUP_GAP   —— 峰谷动画播完 → 余额动画之间的空档，避免两段衔接太紧
+  // 开屏演出：首屏 5s 后强制插播一遍「峰谷 → 余额」（localStorage 可覆盖等待与空档）
   var STARTUP_DELAY = (function () {
     var v = Number(localStorage.getItem('dshcl-startup-delay'))
-    return isFinite(v) && v >= 0 ? v : 10000
+    return isFinite(v) && v >= 0 ? v : 5000
   })()
   var STARTUP_GAP = (function () {
     var v = Number(localStorage.getItem('dshcl-startup-gap'))
@@ -428,8 +426,6 @@
   function syncAnimation(force) {
     if (!pet.state) return
     if (startupHold) return // 开屏空档期：保持当前姿势
-    // 开屏演出排队中且此刻空闲 → 趁机播（不打断任何正在进行的演出）
-    if (startupQueued && !busyForStartup()) { runStartup(); return }
     var want = desiredName()
     // Talk 期间**强制播完**：状态变化先挂起，等这一遍说完再切
     if (talkLock && want !== 'Talk') return
@@ -1494,43 +1490,32 @@
   // ————————————————————— 开屏时序 —————————————————————
   // 常量（STARTUP_DELAY / STARTUP_GAP）定义在文件顶部的可调参数区。
   //
-  // 语义：到点后**排队**，等桌宠空闲（没在说话/思考、没有覆盖动画、没在拖拽）时
-  // 才播，不打断正在进行的演出。之后每次回到常态都会再尝试一次。
+  // 语义：延迟到点后**强制插播**——不管当下是否在思考/输出、是否有覆盖动画，
+  // 都先演一遍开屏（峰谷 → 可选余额），演完再回到原本的工作层/基础层。
   var startupTimer = 0
   var startupPending = null
-  var startupQueued = null
   var startupHold = false // 开屏两段之间的空档：暂停状态驱动的动画切换
 
   function scheduleStartup(peak, low) {
     startupPending = { peak: !!peak, low: !!low }
     clearTimeout(startupTimer)
-    startupTimer = setTimeout(function () {
-      startupTimer = 0
-      // 到点：从"待播"转成"排队择机"
-      if (startupPending) {
-        startupQueued = startupPending
-        startupPending = null
-      }
-      runStartup()
-    }, STARTUP_DELAY)
+    startupTimer = setTimeout(runStartup, STARTUP_DELAY)
   }
 
   function cancelStartup() {
     if (startupTimer) clearTimeout(startupTimer)
     startupTimer = 0
     startupPending = null
-    startupQueued = null
-  }
-
-  function busyForStartup() {
-    return !!(talkLock || layers.overlay || layers.work || pet.segment)
   }
 
   function runStartup() {
-    if (!startupQueued || !pet.state) return
-    if (busyForStartup()) return // 忙：保持排队，等下一次空闲
-    var p = startupQueued
-    startupQueued = null
+    startupTimer = 0
+    var p = startupPending
+    startupPending = null
+    if (!p || !pet.state) return
+    // 强制插播：清掉 Talk 锁与挂起的覆盖动画，立刻把开屏演出来
+    talkLock = false
+    pendingOverlay = null
     playOverlay(p.peak ? 'Sad_Begin' : 'Special_A', function () {
       if (!p.low) { syncAnimation(true); return }
       // 空档 STARTUP_GAP：保持上一段姿势不动（syncAnimation 会被 startupHold 挡住），
@@ -1829,7 +1814,7 @@
         playSound: playSound,
         runStartup: runStartup,
         cancelStartup: cancelStartup,
-        get startup() { return { pending: !!startupPending, queued: !!startupQueued, delay: STARTUP_DELAY, gap: STARTUP_GAP } },
+        get startup() { return { pending: !!startupPending, delay: STARTUP_DELAY, gap: STARTUP_GAP } },
         setLoop: function (name, from, to) {
           if (from === null || from === undefined) delete LOOP_RANGES[name]
           else LOOP_RANGES[name] = { from: Number(from), to: Number(to) }

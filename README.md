@@ -64,12 +64,11 @@ https://github.com/fengshiyangrouguan/dsh-closure-pet
 
 ## 开屏演出
 
-首次拿到 `/state` 后延迟 **10 秒**（`localStorage['dshcl-startup-delay']` 可改），随后**排队等待空闲**再播放，不打断正在进行的思考/输出：
+首次拿到 `/state` 后等待 **5 秒**（`localStorage['dshcl-startup-delay']` 可改），随后**强制插播**一遍，即使此刻正在思考或输出也会被打断：
 
 1. 峰谷：谷价播 `Special_A`、峰价播 `Sad_Begin`，并出对应文案
 2. 间隔 2 秒（`dshcl-startup-gap`）后，余额偏低再播 `Sad_Begin` + 催款文案
-
-排队期间若一直在思考/说话，演出会一直等到下一次回到常态（`syncAnimation` 的空闲时机）。
+3. 演完自动回到原本的工作层（思考/说话）或基础层
 
 ## 设置
 
