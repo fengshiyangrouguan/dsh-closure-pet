@@ -74,6 +74,19 @@ https://github.com/fengshiyangrouguan/dsh-closure-pet
 
 设置面板（右键桌宠 → 设置）：镜像、大小、气泡、透明度、音效开关与音量。持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
 
+## 拖拽
+
+按住桌宠后，页面交互会一直冻结到松手：文字选不中、图片/链接拖不走、下面的元素不 hover 也不会被点穿，指针滑过 iframe 也不会被里面的文档抢走。
+
+实现见 `assets/pet.js` 的 `beginDragLock` / `endDragLock`：
+
+- 命中桌宠的 `pointerdown`（window 捕获阶段）直接 `preventDefault + stopImmediatePropagation`（选区/焦点/原生拖拽都是这次按下的默认动作，页面也收不到这次按下）
+- 按下到松手之间，在捕获阶段拦掉 `mousedown` / `selectstart` / `dragstart`（`pointerdown` 的 `preventDefault` 不保证压掉兼容的 `mousedown`）
+- `<html>` 加 `dshcl-dragging`：`user-select:none` + `cursor:grabbing`
+- 铺一层透明挡板 `#dsh-closure-pet-drag-shield` 吃掉指针命中
+- 松手后吞掉浏览器合成的那一次 `click`（只吞一次，任何新的按下即撤销），避免拖到按钮/链接上松手就点出去
+- 窗口失焦 / 切后台 / `pointercancel` 会自动收尾，挡板不会残留
+
 ## 性能
 
 - 空闲（仅基础层）渲染 **30fps**，工作和交互时 60fps
