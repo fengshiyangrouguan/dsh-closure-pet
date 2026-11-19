@@ -6,6 +6,7 @@
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
+    "./client": "./client.js",
     "./icon": "./icon.png",
     "./package.json": "./package.json",
     "./locale/*": "./locale/*"
@@ -15,12 +16,18 @@
     "locale",
     "lib",
     "assets",
+    "tests",
+    "client.js",
     "icon.png",
     "cordis.patch.yml",
     "README.md",
     "NOTICE.md",
     "LICENSE"
   ],
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\"",
+    "check": "node --check lib/index.js && node --check client.js && node --check assets/src/main.js && node --check assets/pet.js"
+  },
   "keywords": [
     "dsh-plugin",
     "desktop-pet",
@@ -32,6 +39,10 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
     }
   },
   "engines": {
@@ -48,3 +59,4 @@
   "license": "MIT",
   "author": "FSYRG"
 }
+

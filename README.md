@@ -7,12 +7,35 @@
 ## 结构
 
 ```
-lib/index.js                  宿主侧：注入、/state、/config、/assets 路由、计费
-assets/pet.js                 浏览器侧：渲染、状态机、气泡、音效、设置面板
+lib/index.js                  宿主入口：装配（store / events / inject / routes）
+lib/store.js                  运行时状态、花费累计、持久化、余额轮询
+lib/events.js                 DSH 事件订阅（session/event、agent/*、tools/result）
+lib/inject.js                 index 注入行
+lib/routes.js                 /ping、/pet.js、/state、/config、/assets/*、/src/*
+lib/period.js                 峰谷时段（纯函数，北京时间）
+lib/billing.js                计费价目与单条消息花费（纯函数）
+client.js                     客户端插件产物：注册到 shell.overlay，动态加载 /src/main.js
+assets/pet.js                 浏览器入口：动态 import 模块图（经典脚本，兼容旧注入行）
+assets/src/                   前端 ES modules
+  main.js                     组合根：DOM、渲染循环、状态机、轮询、开屏、实例装配
+  core/env.js                 常量 / 日志
+  core/settings.js            设置读写与持久化
+  shared/protocol.js          前后端共享协议（版本 / 路径 / 设置归一化）
+  render/hit-test.js          静态命中区（图元 → 128×108 掩码）
+  anim/library.js             动画数据表（循环区间 / 模式 / 参数）
+  anim/director.js            动画导演（分层状态机 / 分段 / Talk 锁 / 思考与乒乓）
+  audio.js                    音效（工厂）
+  ui/layout.js                位置 / 吸附 / 翻转（工厂）
+  ui/panel.js                 设置面板（工厂）
+  ui/bubble.js                像素气泡（工厂）
+  ui/sticker.js               谷价贴画（工厂）
+  input/drag.js               点击 / 拖拽 / 右键（工厂）
+  io/state.js                 宿主状态轮询 + applyState 事件分发
 assets/spine/                 模型（json / atlas / png）
 assets/vendor/                Spine 3.8 官方运行时（webgl / canvas）
 assets/fonts/                 Ark Pixel 12px + OFL
 assets/audio/                 click / fail / coin / turnfail（Opus 56k）
+tests/                        node --test 用例（宿主纯函数 / 前端模块 / DOM 桩接线）
 cordis.patch.yml              bundle 入口
 ```
 
@@ -46,11 +69,33 @@ https://github.com/fengshiyangrouguan/dsh-closure-pet
 
 | 改动 | 生效方式 |
 |---|---|
-| `assets/pet.js`、模型、字体、音效 | 页面 **Ctrl+R** |
+| `assets/src/**`、模型、字体、音效 | 页面 **Ctrl+R** |
+| `assets/pet.js`（入口，基本不动） | 页面 **Ctrl+R** |
 | `lib/index.js` | 插件管理里关→开（重新 import 模块） |
 | `cordis.patch.yml`（注入行变化） | 重启 DSH |
 
-调试接口挂在 `window.__dshClosurePet`：`play(name)`、`showBubble()`、`settings`、`layers`、`debug`、`startup` 等。
+> 新增了 `/dsh-closure/src/*` 路由（把 `assets/src/` 暴露给浏览器做 ES module 解析）。从旧版本升级后需要把插件**关→开一次**，再 Ctrl+R；宿主只在加载时注册一次路由。
+
+测试（零依赖，Node 内置 runner）：
+
+```bash
+node --test "tests/*.test.mjs"   # 或 npm test
+```
+
+- `tests/host-pure.test.mjs`：峰谷/节假日、计费、北京时间归日
+- `tests/frontend-pure.test.mjs`：常量、设置合并、静态命中区、动画表、音效/布局工厂
+- `tests/frontend-wiring.test.mjs`：DOM 桩下创建面板/气泡/贴画/导演/状态/拖拽，验证依赖注入与监听注册
+
+调试接口挂在 `window.__dshClosurePet`：`play(name)`、`showBubble()`、`settings`、`layers`、`debug`、`startup`、`dispose()` 等。
+
+## 客户端插件与回退
+
+插件有两条加载路径，同一时刻只会生效一条：
+
+1. **客户端插件**（`client.js` + `package.json` 的 `dsh.client`）：DSH 客户端加载器把组件注册到 `shell.overlay`（frame-wide 浮层）；组件挂载时创建容器并动态 `import('/dsh-closure/src/main.js')`，卸载时调用 `__dshClosurePet.dispose()`。加载成功后设置 `window.__dshClosurePetClientActive`。
+2. **注入行回退**（`lib/inject.js`）：客户端插件没加载（版本不匹配、加载失败）时，仍通过 `webserver/index-inject` 注入 `/pet.js`；检测到上面的标志就跳过，避免双开。
+
+桌宠 DOM 挂到客户端插件提供的容器里；没有容器时退回 `document.body`。`window.__dshClosurePet.dispose()` 可手动卸载（停 rAF、清定时器、移除监听与 DOM）。
 
 ## 动画状态机
 
@@ -92,6 +137,8 @@ https://github.com/fengshiyangrouguan/dsh-closure-pet
 - 空闲（仅基础层）渲染 **30fps**，工作和交互时 60fps
 - 页面隐藏时停止渲染，状态轮询从 1s 降到 5s
 - 像素气泡按需创建；文本测量有缓存
+- 命中测试用**静态命中区**（11 个图元 → 128×108 掩码），按下只查表、不读 GPU；`preserveDrawingBuffer` 已关闭
+- WebGL 关闭 MSAA（`antialias:false`）：像素画看不出差别，省掉每帧 4× 采样与 resolve
 
 ## 渲染降级
 
@@ -99,7 +146,7 @@ https://github.com/fengshiyangrouguan/dsh-closure-pet
 
 - 自动：远程桌面 / 老显卡 / 浏览器禁用 WebGL 时
 - 手动验证：地址栏加 `?canvas=1`，或控制台 `localStorage.setItem('dshcl-force-canvas','1')` 后刷新
-- 降级模式下命中测试改用 `getImageData` 采样，其余行为（拖拽、气泡、贴画）一致
+- 降级模式下命中测试仍是同一个静态命中区（与渲染模式无关），拖拽、气泡、贴画行为一致
 
 ## 峰谷时段维护
 
