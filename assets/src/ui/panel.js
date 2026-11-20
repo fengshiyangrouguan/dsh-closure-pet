@@ -4,7 +4,7 @@
 // applyOpacity / hideBubble / audioEnsure / loadSounds / playSound / size / pet / resetPosition。
 // 面板 DOM 懒创建（第一次 open 时），关闭只是 display:none。
 
-import { SIZE_MIN, SIZE_MAX } from '../core/env.js'
+import { SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX } from '../core/env.js'
 
 export function createPanel(deps) {
   var settings = deps.settings
@@ -14,6 +14,7 @@ export function createPanel(deps) {
   var repositionForAnchor = deps.repositionForAnchor
   var applyOpacity = deps.applyOpacity
   var hideBubble = deps.hideBubble
+  var refreshBubble = deps.refreshBubble
   var audioEnsure = deps.audioEnsure
   var loadSounds = deps.loadSounds
   var playSound = deps.playSound
@@ -102,6 +103,49 @@ export function createPanel(deps) {
     sizeWrap.appendChild(slider)
     sizeWrap.appendChild(sizeText)
     sizeRow.appendChild(sizeWrap)
+
+    // 气泡大小（100% 为基准；50%–200%）
+    var bubbleScaleRow = row('气泡大小')
+    var bubbleScaleWrap = document.createElement('span')
+    bubbleScaleWrap.style.cssText = 'display:inline-flex;align-items:center;gap:8px'
+    var bubbleScaleSlider = document.createElement('input')
+    bubbleScaleSlider.type = 'range'
+    bubbleScaleSlider.min = String(BUBBLE_SCALE_MIN)
+    bubbleScaleSlider.max = String(BUBBLE_SCALE_MAX)
+    bubbleScaleSlider.step = '5'
+    bubbleScaleSlider.value = String(settings.bubbleScale)
+    bubbleScaleSlider.style.cssText = 'width:96px;accent-color:#7d86ff;cursor:pointer'
+    var bubbleScaleText = document.createElement('span')
+    bubbleScaleText.style.cssText = 'width:38px;text-align:right;color:#cfd6e6'
+    bubbleScaleText.textContent = Math.round(settings.bubbleScale) + '%'
+    bubbleScaleSlider.addEventListener('input', function () {
+      settings.bubbleScale = Math.min(BUBBLE_SCALE_MAX, Math.max(BUBBLE_SCALE_MIN, Number(bubbleScaleSlider.value) || 100))
+      bubbleScaleText.textContent = Math.round(settings.bubbleScale) + '%'
+      if (refreshBubble) refreshBubble()
+      saveSettings(false)
+    })
+    bubbleScaleWrap.appendChild(bubbleScaleSlider)
+    bubbleScaleWrap.appendChild(bubbleScaleText)
+    bubbleScaleRow.appendChild(bubbleScaleWrap)
+
+    // 分级排版开关：金额大、辅助信息小的多字号效果
+    var tiersRow = row('更多层次的字体视觉效果')
+    var tiersBtn = document.createElement('button')
+    tiersBtn.style.cssText = 'padding:3px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.18);' +
+      'background:rgba(255,255,255,.06);color:#dfe4f0;font:inherit;cursor:pointer'
+    function syncTiersBtn() {
+      tiersBtn.textContent = settings.bubbleTiers ? '开' : '关'
+      tiersBtn.style.background = settings.bubbleTiers ? 'rgba(125,134,255,.85)' : 'rgba(255,255,255,.06)'
+      tiersBtn.style.color = settings.bubbleTiers ? '#fff' : '#dfe4f0'
+    }
+    tiersBtn.addEventListener('click', function () {
+      settings.bubbleTiers = !settings.bubbleTiers
+      syncTiersBtn()
+      saveSettings(true)
+      if (refreshBubble) refreshBubble()
+    })
+    syncTiersBtn()
+    tiersRow.appendChild(tiersBtn)
 
     // 气泡开关
     var bubbleRow = row('气泡')
@@ -203,7 +247,15 @@ export function createPanel(deps) {
 
     document.body.appendChild(panel)
     syncMirrorButtons()
-    return { syncMirrorButtons: syncMirrorButtons, slider: slider, sizeText: sizeText }
+    syncTiersBtn()
+    return {
+      syncMirrorButtons: syncMirrorButtons,
+      syncTiersBtn: syncTiersBtn,
+      slider: slider,
+      sizeText: sizeText,
+      bubbleScaleSlider: bubbleScaleSlider,
+      bubbleScaleText: bubbleScaleText,
+    }
   }
 
   var panelApi = null
@@ -212,6 +264,9 @@ export function createPanel(deps) {
     if (panelApi) {
       panelApi.slider.value = String(settings.size)
       panelApi.sizeText.textContent = Math.round(settings.size * 100) + '%'
+      panelApi.bubbleScaleSlider.value = String(settings.bubbleScale)
+      panelApi.bubbleScaleText.textContent = Math.round(settings.bubbleScale) + '%'
+      panelApi.syncTiersBtn()
       panelApi.syncMirrorButtons()
     }
     panel.style.display = 'block'

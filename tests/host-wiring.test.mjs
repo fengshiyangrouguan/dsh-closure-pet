@@ -125,10 +125,17 @@ test('apply() 注册注入行、事件与全部路由', async (t) => {
   root.handlers['session/event'][0](null, {
     type: 'assistant/message',
     time: peak,
-    data: { usage: { inputTokens: 1e6, outputTokens: 0, cacheReadTokens: 0 }, turn: 1 },
+    data: {
+      usage: { inputTokens: 1e6, outputTokens: 0, cacheReadTokens: 0 }, turn: 1,
+      message: { source: { provider: 'deepseek', model: 'deepseek-v4-pro' } },
+    },
   })
   const state2 = JSON.parse((await callRoute(routes, '/dsh-closure/state', 'GET')).body)
   assert.ok(state2.spend.today > 0, 'spend.today should increase')
+  assert.equal(state2.spend.sources.length, 1)
+  assert.equal(state2.spend.sources[0].provider, 'deepseek')
+  assert.equal(state2.spend.sources[0].model, 'deepseek-v4-pro')
+  assert.ok(state2.spend.sources[0].cost > 0)
 
   // agent/assistant-stream：thinking
   root.handlers['agent/assistant-stream'][0]({ frame: { type: 'start' } })

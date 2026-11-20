@@ -16,11 +16,18 @@ export const CONFIG_PATH = URL_PREFIX + '/config'
 export const SIZE_MIN = 0.6
 export const SIZE_MAX = 2.0
 export const OPACITY_MIN = 0.3
+export const BUBBLE_SCALE_MIN = 50
+export const BUBBLE_SCALE_MAX = 200
+export const BUBBLE_SCALE_BASE = 100 // 100% = 气泡排版的基准尺寸，缩放系数 = scale / 100
 
 export const SETTINGS_DEFAULTS = Object.freeze({
   mirror: 'auto',
   size: 1,
   bubble: true,
+  // 气泡缩放：100% 为基准；50%–200%
+  bubbleScale: BUBBLE_SCALE_BASE,
+  // 分级排版：金额大、辅助信息小的多字号排版（关掉后统一字号）
+  bubbleTiers: true,
   opacity: 1,
   sound: true,
   volume: 0.7,
@@ -37,6 +44,11 @@ export function normalizeSettings(raw, base) {
   const size = Number(raw.size)
   if (Number.isFinite(size)) out.size = Math.min(SIZE_MAX, Math.max(SIZE_MIN, size))
   if (typeof raw.bubble === 'boolean') out.bubble = raw.bubble
+  const bubbleScale = Number(raw.bubbleScale)
+  if (Number.isFinite(bubbleScale)) {
+    out.bubbleScale = Math.min(BUBBLE_SCALE_MAX, Math.max(BUBBLE_SCALE_MIN, bubbleScale))
+  }
+  if (typeof raw.bubbleTiers === 'boolean') out.bubbleTiers = raw.bubbleTiers
   const opacity = Number(raw.opacity)
   if (Number.isFinite(opacity)) out.opacity = Math.min(1, Math.max(OPACITY_MIN, opacity))
   if (typeof raw.sound === 'boolean') out.sound = raw.sound

@@ -18,8 +18,8 @@ export const POS_KEY = 'dshcl-pos'
 export const SETTINGS_KEY = 'dshcl-settings'
 export const DRAG_THRESHOLD_SQ = 9
 // 尺寸范围与共享协议放一起，避免宿主/前端各写一套 clamp
-import { SIZE_MIN, SIZE_MAX } from '../shared/protocol.js'
-export { SIZE_MIN, SIZE_MAX }
+import { SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX } from '../shared/protocol.js'
+export { SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX }
 export const BLEND_BACK = 0.35
 
 // Interact 前后段的分界（秒）：2.10s = 30fps 第 63 帧，动作回正的中心点。

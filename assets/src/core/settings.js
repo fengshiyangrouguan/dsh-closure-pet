@@ -24,7 +24,8 @@ export function saveSettings(immediate) {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
       mirror: settings.mirror, size: settings.size,
-      bubble: settings.bubble, opacity: settings.opacity,
+      bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers,
+      opacity: settings.opacity,
       sound: settings.sound, volume: settings.volume,
     }))
   } catch (err) {}

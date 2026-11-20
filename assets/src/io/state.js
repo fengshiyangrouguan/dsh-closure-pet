@@ -6,7 +6,7 @@
 // scheduleStartup / settings / saveSettings / layout / repositionForAnchor / resolveFlip /
 // applyOpacity / isBubbleShown。
 
-import { PREFIX, SIZE_MIN, SIZE_MAX } from '../core/env.js'
+import { PREFIX, SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX } from '../core/env.js'
 import { HAPPY_CHANCE } from '../anim/library.js'
 
 export function createState(deps) {
@@ -161,6 +161,8 @@ export function createState(deps) {
         if (s.mirror === 'auto' || s.mirror === 'always' || s.mirror === 'never') settings.mirror = s.mirror
         if (isFinite(Number(s.size))) settings.size = Math.min(SIZE_MAX, Math.max(SIZE_MIN, Number(s.size)))
         if (typeof s.bubble === 'boolean') settings.bubble = s.bubble
+        if (isFinite(Number(s.bubbleScale))) settings.bubbleScale = Math.min(BUBBLE_SCALE_MAX, Math.max(BUBBLE_SCALE_MIN, Number(s.bubbleScale)))
+        if (typeof s.bubbleTiers === 'boolean') settings.bubbleTiers = s.bubbleTiers
         if (isFinite(Number(s.opacity))) settings.opacity = Math.min(1, Math.max(0.3, Number(s.opacity)))
         if (typeof s.sound === 'boolean') settings.sound = s.sound
         if (isFinite(Number(s.volume))) settings.volume = Math.min(1, Math.max(0, Number(s.volume)))
@@ -168,6 +170,7 @@ export function createState(deps) {
         repositionForAnchor()
         resolveFlip()
         applyOpacity()
+        if (isBubbleShown()) refreshBubble()
         saveSettings(true)
       })
       .catch(function () { /* 宿主不可用就沿用 localStorage */ })

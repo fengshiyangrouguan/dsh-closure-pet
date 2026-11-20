@@ -21,7 +21,7 @@
 //   main.js             组合根：DOM、渲染循环、状态机、交互、面板、轮询、开屏
 
 import {
-  PREFIX, MODEL, CANVAS_W, FRAME, FRAMING, DRAG_THRESHOLD_SQ, SIZE_MIN, SIZE_MAX,
+  PREFIX, MODEL, CANVAS_W, FRAME, FRAMING, DRAG_THRESHOLD_SQ, SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX,
   INTERACT_SPLIT, INTERACT_MIX, STARTUP_DELAY, STARTUP_GAP, log, warn,
 } from './core/env.js'
 import { settings, saveSettings } from './core/settings.js'
@@ -450,7 +450,7 @@ import { createState } from './io/state.js'
   panelUi = createPanel({
     settings: settings, saveSettings: saveSettings, resolveFlip: resolveFlip,
     layout: layout, repositionForAnchor: repositionForAnchor, applyOpacity: applyOpacity,
-    hideBubble: hideBubble, audioEnsure: audioEnsure, loadSounds: loadSounds, playSound: playSound,
+    hideBubble: hideBubble, refreshBubble: refreshBubble, audioEnsure: audioEnsure, loadSounds: loadSounds, playSound: playSound,
     size: size, pet: pet, resetPosition: resetPosition,
   })
   bubbleApi = createBubble({
@@ -579,18 +579,24 @@ import { createState } from './io/state.js'
         segments: function () { return [segmentRange(0), segmentRange(1)] },
         openPanel: openPanel,
         closePanel: closePanel,
-        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, opacity: settings.opacity, sound: settings.sound, volume: settings.volume } },
+        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, opacity: settings.opacity, sound: settings.sound, volume: settings.volume } },
         get split() { return INTERACT_SPLIT },
         setSettings: function (patch) {
           if (patch) {
             if (patch.mirror) settings.mirror = patch.mirror
             if (patch.size) settings.size = Number(patch.size)
             if (typeof patch.bubble === 'boolean') settings.bubble = patch.bubble
+            if (patch.bubbleScale !== undefined) {
+              var bs = Number(patch.bubbleScale)
+              settings.bubbleScale = isFinite(bs) ? Math.min(BUBBLE_SCALE_MAX, Math.max(BUBBLE_SCALE_MIN, bs)) : 100
+            }
+            if (typeof patch.bubbleTiers === 'boolean') settings.bubbleTiers = patch.bubbleTiers
             if (patch.opacity) settings.opacity = Number(patch.opacity)
             if (typeof patch.sound === 'boolean') settings.sound = patch.sound
             if (patch.volume !== undefined) settings.volume = Number(patch.volume)
           }
           saveSettings(true); layout(); repositionForAnchor(); resolveFlip(); applyOpacity()
+          if (bubbleApi && bubbleApi.isShown()) refreshBubble()
           if (!settings.bubble) hideBubble()
         },
         resetPosition: resetPosition,
