@@ -15,15 +15,15 @@ test('协议版本与路径', () => {
 
 test('设置默认值', () => {
   assert.deepEqual({ ...SETTINGS_DEFAULTS }, {
-    mirror: 'auto', size: 1, bubble: true, bubbleScale: 100, bubbleTiers: true, opacity: 1, sound: true, volume: 0.7,
+    mirror: 'auto', size: 1, bubble: true, bubbleScale: 100, bubbleTiers: true, snapStrength: 200, opacity: 1, sound: true, volume: 0.7,
   })
   assert.ok(SIZE_MIN < SIZE_MAX)
   assert.ok(OPACITY_MIN >= 0 && OPACITY_MIN < 1)
 })
 
 test('normalizeSettings 接受合法字段', () => {
-  const out = normalizeSettings({ mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, opacity: 0.8, sound: false, volume: 0.1 })
-  assert.deepEqual(out, { mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, opacity: 0.8, sound: false, volume: 0.1 })
+  const out = normalizeSettings({ mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, snapStrength: 200, opacity: 0.8, sound: false, volume: 0.1 })
+  assert.deepEqual(out, { mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, snapStrength: 200, opacity: 0.8, sound: false, volume: 0.1 })
 })
 
 test('normalizeSettings 夹取越界值', () => {
@@ -58,4 +58,10 @@ test('bubbleScale / bubbleTiers 归一化', () => {
   assert.equal(normalizeSettings({ bubbleScale: 150 }).bubbleScale, 150)
   assert.equal(normalizeSettings({ bubbleTiers: false }).bubbleTiers, false)
   assert.equal(normalizeSettings({ bubbleTiers: 'no' }).bubbleTiers, true)
+})
+
+test('snapStrength 归一化', () => {
+  assert.equal(normalizeSettings({ snapStrength: -5 }).snapStrength, 0)
+  assert.equal(normalizeSettings({ snapStrength: 500 }).snapStrength, 200)
+  assert.equal(normalizeSettings({ snapStrength: 75 }).snapStrength, 75)
 })

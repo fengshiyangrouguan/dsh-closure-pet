@@ -25,6 +25,7 @@ export function saveSettings(immediate) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
       mirror: settings.mirror, size: settings.size,
       bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers,
+      snapStrength: settings.snapStrength,
       opacity: settings.opacity,
       sound: settings.sound, volume: settings.volume,
     }))

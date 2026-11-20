@@ -21,7 +21,7 @@
 //   main.js             组合根：DOM、渲染循环、状态机、交互、面板、轮询、开屏
 
 import {
-  PREFIX, MODEL, CANVAS_W, FRAME, FRAMING, DRAG_THRESHOLD_SQ, SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX,
+  PREFIX, MODEL, CANVAS_W, FRAME, FRAMING, DRAG_THRESHOLD_SQ, SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX, SNAP_STRENGTH_MIN, SNAP_STRENGTH_MAX,
   INTERACT_SPLIT, INTERACT_MIX, STARTUP_DELAY, STARTUP_GAP, log, warn,
 } from './core/env.js'
 import { settings, saveSettings } from './core/settings.js'
@@ -579,7 +579,7 @@ import { createState } from './io/state.js'
         segments: function () { return [segmentRange(0), segmentRange(1)] },
         openPanel: openPanel,
         closePanel: closePanel,
-        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, opacity: settings.opacity, sound: settings.sound, volume: settings.volume } },
+        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume } },
         get split() { return INTERACT_SPLIT },
         setSettings: function (patch) {
           if (patch) {
@@ -591,6 +591,10 @@ import { createState } from './io/state.js'
               settings.bubbleScale = isFinite(bs) ? Math.min(BUBBLE_SCALE_MAX, Math.max(BUBBLE_SCALE_MIN, bs)) : 100
             }
             if (typeof patch.bubbleTiers === 'boolean') settings.bubbleTiers = patch.bubbleTiers
+            if (patch.snapStrength !== undefined) {
+              var ss = Number(patch.snapStrength)
+              settings.snapStrength = isFinite(ss) ? Math.min(SNAP_STRENGTH_MAX, Math.max(SNAP_STRENGTH_MIN, ss)) : SNAP_STRENGTH_MAX
+            }
             if (patch.opacity) settings.opacity = Number(patch.opacity)
             if (typeof patch.sound === 'boolean') settings.sound = patch.sound
             if (patch.volume !== undefined) settings.volume = Number(patch.volume)

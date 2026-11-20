@@ -6,7 +6,7 @@
 // scheduleStartup / settings / saveSettings / layout / repositionForAnchor / resolveFlip /
 // applyOpacity / isBubbleShown。
 
-import { PREFIX, SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX } from '../core/env.js'
+import { PREFIX, SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX, SNAP_STRENGTH_MIN, SNAP_STRENGTH_MAX } from '../core/env.js'
 import { HAPPY_CHANCE } from '../anim/library.js'
 
 export function createState(deps) {
@@ -163,6 +163,7 @@ export function createState(deps) {
         if (typeof s.bubble === 'boolean') settings.bubble = s.bubble
         if (isFinite(Number(s.bubbleScale))) settings.bubbleScale = Math.min(BUBBLE_SCALE_MAX, Math.max(BUBBLE_SCALE_MIN, Number(s.bubbleScale)))
         if (typeof s.bubbleTiers === 'boolean') settings.bubbleTiers = s.bubbleTiers
+        if (isFinite(Number(s.snapStrength))) settings.snapStrength = Math.min(SNAP_STRENGTH_MAX, Math.max(SNAP_STRENGTH_MIN, Number(s.snapStrength)))
         if (isFinite(Number(s.opacity))) settings.opacity = Math.min(1, Math.max(0.3, Number(s.opacity)))
         if (typeof s.sound === 'boolean') settings.sound = s.sound
         if (isFinite(Number(s.volume))) settings.volume = Math.min(1, Math.max(0, Number(s.volume)))

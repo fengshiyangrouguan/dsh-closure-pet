@@ -4,7 +4,7 @@
 // applyOpacity / hideBubble / audioEnsure / loadSounds / playSound / size / pet / resetPosition。
 // 面板 DOM 懒创建（第一次 open 时），关闭只是 display:none。
 
-import { SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX } from '../core/env.js'
+import { SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX, SNAP_STRENGTH_MIN, SNAP_STRENGTH_MAX } from '../core/env.js'
 
 export function createPanel(deps) {
   var settings = deps.settings
@@ -103,6 +103,29 @@ export function createPanel(deps) {
     sizeWrap.appendChild(slider)
     sizeWrap.appendChild(sizeText)
     sizeRow.appendChild(sizeWrap)
+
+    // 边缘吸附强度（200% = 旧吸附范围，0% = 不吸附）
+    var snapRow = row('吸附强度')
+    var snapWrap = document.createElement('span')
+    snapWrap.style.cssText = 'display:inline-flex;align-items:center;gap:8px'
+    var snapSlider = document.createElement('input')
+    snapSlider.type = 'range'
+    snapSlider.min = String(SNAP_STRENGTH_MIN)
+    snapSlider.max = String(SNAP_STRENGTH_MAX)
+    snapSlider.step = '5'
+    snapSlider.value = String(settings.snapStrength)
+    snapSlider.style.cssText = 'width:96px;accent-color:#7d86ff;cursor:pointer'
+    var snapText = document.createElement('span')
+    snapText.style.cssText = 'width:38px;text-align:right;color:#cfd6e6'
+    snapText.textContent = Math.round(settings.snapStrength) + '%'
+    snapSlider.addEventListener('input', function () {
+      settings.snapStrength = Math.min(SNAP_STRENGTH_MAX, Math.max(SNAP_STRENGTH_MIN, Number(snapSlider.value) || 0))
+      snapText.textContent = Math.round(settings.snapStrength) + '%'
+      saveSettings(false)
+    })
+    snapWrap.appendChild(snapSlider)
+    snapWrap.appendChild(snapText)
+    snapRow.appendChild(snapWrap)
 
     // 气泡大小（100% 为基准；50%–200%）
     var bubbleScaleRow = row('气泡大小')
@@ -253,6 +276,8 @@ export function createPanel(deps) {
       syncTiersBtn: syncTiersBtn,
       slider: slider,
       sizeText: sizeText,
+      snapSlider: snapSlider,
+      snapText: snapText,
       bubbleScaleSlider: bubbleScaleSlider,
       bubbleScaleText: bubbleScaleText,
     }
@@ -264,6 +289,8 @@ export function createPanel(deps) {
     if (panelApi) {
       panelApi.slider.value = String(settings.size)
       panelApi.sizeText.textContent = Math.round(settings.size * 100) + '%'
+      panelApi.snapSlider.value = String(settings.snapStrength)
+      panelApi.snapText.textContent = Math.round(settings.snapStrength) + '%'
       panelApi.bubbleScaleSlider.value = String(settings.bubbleScale)
       panelApi.bubbleScaleText.textContent = Math.round(settings.bubbleScale) + '%'
       panelApi.syncTiersBtn()

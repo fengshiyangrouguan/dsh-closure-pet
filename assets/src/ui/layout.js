@@ -4,7 +4,7 @@
 // 依赖注入：host、canvas、settings、pet（可变状态对象）。
 // 注意：hideBubble 不在这里，它属于气泡模块。
 
-import { MARGIN, POS_KEY } from '../core/env.js'
+import { MARGIN, POS_KEY, SNAP_STRENGTH_MIN, SNAP_STRENGTH_MAX } from '../core/env.js'
 
 export function createLayout(deps) {
   var host = deps.host
@@ -103,16 +103,26 @@ export function createLayout(deps) {
     applyPosition()
   }
 
+  /** 吸附范围系数：200% 时正好是屏幕外侧 1/4，0% 时完全不吸附。 */
+  function snapFactor() {
+    var v = Number(settings.snapStrength)
+    if (!isFinite(v)) v = SNAP_STRENGTH_MAX
+    return Math.min(SNAP_STRENGTH_MAX, Math.max(SNAP_STRENGTH_MIN, v)) / SNAP_STRENGTH_MAX
+  }
+
   function settle() {
     var s = size()
-    var cx = pet.pos.x + s.w / 2
-    var cy = pet.pos.y + s.h / 2
     var h = null
     var v = null
-    if (cx < window.innerWidth / 4) h = 'left'
-    else if (cx > window.innerWidth * 3 / 4) h = 'right'
-    if (cy < window.innerHeight / 4) v = 'top'
-    else if (cy > window.innerHeight * 3 / 4) v = 'bottom'
+    // 吸附范围按“身体边缘离屏幕边有多近”算，而不是中心点：
+    //   200% 时旧逻辑是“中心进入外侧 1/4”，换算成边缘距离正好是 (屏宽/4 - 半身宽)。
+    //   这样 200% 与旧行为逐像素一致，调低后仍然有意义，0% 才完全不吸。
+    var zoneX = Math.max(0, window.innerWidth / 4 - s.w / 2) * snapFactor()
+    var zoneY = Math.max(0, window.innerHeight / 4 - s.h / 2) * snapFactor()
+    if (pet.pos.x < zoneX) h = 'left'
+    else if (pet.pos.x + s.w > window.innerWidth - zoneX) h = 'right'
+    if (pet.pos.y < zoneY) v = 'top'
+    else if (pet.pos.y + s.h > window.innerHeight - zoneY) v = 'bottom'
 
     var targetX = h === 'left' ? MARGIN : h === 'right' ? window.innerWidth - s.w - MARGIN : pet.pos.x
     var targetY = v === 'top' ? MARGIN : v === 'bottom' ? window.innerHeight - s.h - MARGIN : pet.pos.y

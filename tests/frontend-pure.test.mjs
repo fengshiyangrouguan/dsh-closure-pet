@@ -83,3 +83,34 @@ test('布局工厂：大小 / 夹取 / 落位 / 吸附 / 镜像', () => {
   L.setFlipped(false)
   assert.equal(canvas.style.transform, '')
 })
+
+test('吸附强度：0% 不吸，100% 半程，200% 等同旧行为', () => {
+  const host = { offsetWidth: 450, offsetHeight: 379, style: {} }
+  const canvas = { style: {} }
+  const pet = { pos: { x: 100, y: 200 }, anchor: { h: null, v: null }, flipped: false }
+  const settings = { ...settingsMod.settings }
+  const L = layoutMod.createLayout({ host, canvas, settings, pet })
+
+  settings.snapStrength = 200
+  pet.pos = { x: 100, y: 200 }
+  pet.anchor = { h: null, v: null }
+  L.settle()
+  assert.equal(pet.anchor.h, 'left')
+
+  settings.snapStrength = 100
+  pet.pos = { x: 150, y: 200 }
+  pet.anchor = { h: null, v: null }
+  L.settle()
+  assert.equal(pet.anchor.h, null)
+  pet.pos = { x: 100, y: 200 }
+  pet.anchor = { h: null, v: null }
+  L.settle()
+  assert.equal(pet.anchor.h, 'left')
+
+  settings.snapStrength = 0
+  pet.pos = { x: 10, y: 10 }
+  pet.anchor = { h: null, v: null }
+  L.settle()
+  assert.equal(pet.anchor.h, null)
+  assert.equal(pet.anchor.v, null)
+})

@@ -19,6 +19,8 @@ export const OPACITY_MIN = 0.3
 export const BUBBLE_SCALE_MIN = 50
 export const BUBBLE_SCALE_MAX = 200
 export const BUBBLE_SCALE_BASE = 100 // 100% = 气泡排版的基准尺寸，缩放系数 = scale / 100
+export const SNAP_STRENGTH_MIN = 0
+export const SNAP_STRENGTH_MAX = 200
 
 export const SETTINGS_DEFAULTS = Object.freeze({
   mirror: 'auto',
@@ -28,6 +30,8 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   bubbleScale: BUBBLE_SCALE_BASE,
   // 分级排版：金额大、辅助信息小的多字号排版（关掉后统一字号）
   bubbleTiers: true,
+  // 边缘吸附强度：200% = 旧行为（屏幕外侧 1/4），0% = 不吸附
+  snapStrength: SNAP_STRENGTH_MAX,
   opacity: 1,
   sound: true,
   volume: 0.7,
@@ -49,6 +53,10 @@ export function normalizeSettings(raw, base) {
     out.bubbleScale = Math.min(BUBBLE_SCALE_MAX, Math.max(BUBBLE_SCALE_MIN, bubbleScale))
   }
   if (typeof raw.bubbleTiers === 'boolean') out.bubbleTiers = raw.bubbleTiers
+  const snapStrength = Number(raw.snapStrength)
+  if (Number.isFinite(snapStrength)) {
+    out.snapStrength = Math.min(SNAP_STRENGTH_MAX, Math.max(SNAP_STRENGTH_MIN, snapStrength))
+  }
   const opacity = Number(raw.opacity)
   if (Number.isFinite(opacity)) out.opacity = Math.min(1, Math.max(OPACITY_MIN, opacity))
   if (typeof raw.sound === 'boolean') out.sound = raw.sound
