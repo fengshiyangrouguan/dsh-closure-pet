@@ -356,6 +356,7 @@ import { createState } from './io/state.js'
   var bubbleApi = null
   function showBubble(eventText, eventMs) { if (bubbleApi) bubbleApi.show(eventText, eventMs) }
   function refreshBubble() { if (bubbleApi) bubbleApi.refresh() }
+  function followBubble() { if (bubbleApi) bubbleApi.follow() }
   function hideBubble() { if (bubbleApi) bubbleApi.hide() }
 
   // ————————————————————— 谷价贴画（−50% 扫描线）—————————————————————
@@ -469,7 +470,7 @@ import { createState } from './io/state.js'
   })
   dragApi = createDrag({
     hitTest: hitTest, pet: pet, host: host, clampPos: clampPos, applyPosition: applyPosition,
-    settle: settle, refreshBubble: refreshBubble, playSegment: playSegment,
+    settle: settle, refreshBubble: refreshBubble, followBubble: followBubble, playSegment: playSegment,
     showBubble: showBubble, showValleySticker: showValleySticker,
     openPanel: openPanel, closePanel: closePanel, panelIsOpen: panelIsOpen, insidePanel: insidePanel,
   })

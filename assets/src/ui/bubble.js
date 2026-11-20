@@ -31,6 +31,8 @@ export function createBubble(deps) {
   var bubbleSvg = null
   var bubbleW = 0
   var bubbleH = 0
+  var bubbleTailCenter = 0
+  var bubbleTailUp = false
   var bubbleHideTimer = 0
   var bubbleTickTimer = 0
 
@@ -149,6 +151,23 @@ export function createBubble(deps) {
     ].join(' ')
   }
 
+  // 只重画外框/尾巴（拖动时每帧调用，不重复折行与排版）
+  function drawBubbleFrame() {
+    var w = bubbleW
+    var h = bubbleH
+    var tailX = Math.round(Math.min(
+      Math.max(8, bubbleTailCenter - TAIL_W / 2),
+      w - TAIL_W - 8,
+    ))
+    bubbleSvg.setAttribute('width', String(w + 6))
+    bubbleSvg.setAttribute('height', String(h + 6))
+    bubbleSvg.setAttribute('viewBox', `0 0 ${w + 6} ${h + 6}`)
+    var d = bubblePath(w, h, tailX, bubbleTailUp)
+    bubbleSvg.innerHTML =
+      '<path d="' + d + '" fill="#000" fill-opacity=".32" transform="translate(3,3)"/>' +
+      '<path d="' + d + '" fill="#ffffff" stroke="#20232a" stroke-width="2"/>'
+  }
+
   function renderBubble(lines, tailCenterX, tailUp) {
     ensureFont()
     ensureBubble()
@@ -179,16 +198,9 @@ export function createBubble(deps) {
     bubbleEl.style.width = (w + 6) + 'px'
     bubbleEl.style.height = (h + 6) + 'px'
 
-    var tailX = Math.round(Math.min(
-      Math.max(8, (tailCenterX || w / 2) - TAIL_W / 2),
-      w - TAIL_W - 8,
-    ))
-    bubbleSvg.setAttribute('width', String(w + 6))
-    bubbleSvg.setAttribute('height', String(h + 6))
-    bubbleSvg.setAttribute('viewBox', `0 0 ${w + 6} ${h + 6}`)
-    bubbleSvg.innerHTML =
-      '<path d="' + bubblePath(w, h, tailX, tailUp) + '" fill="#000" fill-opacity=".32" transform="translate(3,3)"/>' +
-      '<path d="' + bubblePath(w, h, tailX, tailUp) + '" fill="#ffffff" stroke="#20232a" stroke-width="2"/>'
+    bubbleTailCenter = tailCenterX || w / 2
+    bubbleTailUp = !!tailUp
+    drawBubbleFrame()
 
     bubbleTextEl.style.left = (BUBBLE_PAD + 2) + 'px'
     bubbleTextEl.style.top = ((tailUp ? TAIL_H : 0) + BUBBLE_PAD + 1) + 'px'
@@ -272,6 +284,25 @@ export function createBubble(deps) {
     placeBubble()
   }
 
+  // 拖动时气泡跟着桌宠走：只更新位置与外框，不重新折行/不重建文字
+  // （与 refreshBubble 分开，避免每帧 measureText 造成拖拽掉帧）
+  var bubbleFollowRaf = 0
+  function followBubble() {
+    if (!bubbleShown || !bubbleEl || !pet.pos) return
+    if (bubbleFollowRaf) return
+    bubbleFollowRaf = requestAnimationFrame(function () {
+      bubbleFollowRaf = 0
+      if (!bubbleShown || !bubbleEl || !pet.pos) return
+      var pos = placeBubble()
+      // 尾巴指向/上下翻转发生变化时才重画外框
+      if (pos.tailCenter !== bubbleTailCenter || pos.below !== bubbleTailUp) {
+        bubbleTailCenter = pos.tailCenter
+        bubbleTailUp = !!pos.below
+        drawBubbleFrame()
+      }
+    })
+  }
+
   // 气泡显隐动画：像从桌宠头顶"冒"出来（底部为轴心），带一点回弹
   var bubbleShown = false
   function popBubbleIn() {
@@ -347,6 +378,7 @@ export function createBubble(deps) {
 
   function dispose() {
     hideBubble()
+    if (bubbleFollowRaf) { cancelAnimationFrame(bubbleFollowRaf); bubbleFollowRaf = 0 }
     if (bubbleHideTimer) { clearTimeout(bubbleHideTimer); bubbleHideTimer = 0 }
     if (bubbleTickTimer) { clearInterval(bubbleTickTimer); bubbleTickTimer = 0 }
     if (bubbleEl && bubbleEl.parentNode) bubbleEl.parentNode.removeChild(bubbleEl)
@@ -356,5 +388,5 @@ export function createBubble(deps) {
     bubbleSvg = null
   }
 
-  return { show: showBubble, refresh: refreshBubble, hide: hideBubble, dispose: dispose, isShown: function () { return bubbleShown } }
+  return { show: showBubble, refresh: refreshBubble, follow: followBubble, hide: hideBubble, dispose: dispose, isShown: function () { return bubbleShown } }
 }

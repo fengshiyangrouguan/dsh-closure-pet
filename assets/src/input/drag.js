@@ -15,6 +15,7 @@ export function createDrag(deps) {
   var applyPosition = deps.applyPosition
   var settle = deps.settle
   var refreshBubble = deps.refreshBubble
+  var followBubble = deps.followBubble
   var playSegment = deps.playSegment
   var showBubble = deps.showBubble
   var showValleySticker = deps.showValleySticker
@@ -147,6 +148,7 @@ export function createDrag(deps) {
     if (!drag.moved) return
     pet.pos = clampPos(drag.originX + dx, drag.originY + dy)
     applyPosition()
+    if (followBubble) followBubble()
   }, true)
 
   function endDrag(e) {
@@ -155,6 +157,7 @@ export function createDrag(deps) {
     var passive = drag.passive
     drag = null
     endDragLock()
+    if (e) updateGrabCursor(e)
     // 松手后浏览器还会补一次 click；标记一下，让紧跟其后的那一下被吞掉。
     // pointercancel 不会合成 click，别把标记留到下一次真实点击。
     swallowClick = !(e && e.type === 'pointercancel')
@@ -170,6 +173,7 @@ export function createDrag(deps) {
 
   // 拖拽中窗口失焦 / 切到后台：pointerup 可能永远不来，必须手动收尾，否则挡板会留在页面上
   function cancelDrag() {
+    setGrabCursor(false)
     if (!drag) return
     var wasDrag = drag.moved
     drag = null
@@ -177,6 +181,30 @@ export function createDrag(deps) {
     host.style.transition = 'opacity .35s ease'
     if (wasDrag) { settle(); refreshBubble() }
   }
+
+  // 悬停在桌宠命中区时给 grab 光标（透明区 / 面板上恢复默认）
+  var grabCursor = false
+  var cursorRaf = 0
+  function setGrabCursor(on) {
+    if (grabCursor === on) return
+    grabCursor = on
+    try { document.documentElement.style.cursor = on ? 'grab' : '' } catch (err) {}
+  }
+  function updateGrabCursor(e) {
+    if (!e || drag) return
+    if (window.__dshClosurePet.phase !== 'running' || insidePanel(e.target)) {
+      setGrabCursor(false)
+      return
+    }
+    setGrabCursor(hitTest(e.clientX, e.clientY))
+  }
+  listen(window, 'mousemove', function (e) {
+    if (cursorRaf) return
+    cursorRaf = requestAnimationFrame(function () {
+      cursorRaf = 0
+      updateGrabCursor(e)
+    })
+  }, true)
 
   listen(window, 'pointerup', endDrag, true)
   listen(window, 'pointercancel', endDrag, true)
@@ -217,6 +245,8 @@ export function createDrag(deps) {
     dragShield = null
     if (dragStyle && dragStyle.parentNode) dragStyle.parentNode.removeChild(dragStyle)
     dragStyle = null
+    setGrabCursor(false)
+    if (cursorRaf) { cancelAnimationFrame(cursorRaf); cursorRaf = 0 }
     try { document.documentElement.classList.remove('dshcl-dragging') } catch (err) {}
   }
 
