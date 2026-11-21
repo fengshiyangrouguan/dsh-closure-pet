@@ -1,26 +1,32 @@
 # NOTICE
 
-本插件的**代码**整体可按 MIT 使用，但随包的资源带有各自的来源与限制，分发前请逐项确认。
+本插件的**代码**可按 MIT 许可证使用；其余资源来源不同，分发前请逐项确认。
+本 NOTICE 不授予你对任何第三方素材的权利。
 
-## 游戏素材（不得二次分发）
+## 角色形象与动画
 
-- `assets/spine/ac_s_closur_spine.{json,atlas,png}` —— 《明日方舟》可露希尔自走棋皮肤（Spine 3.8），版权归上海鹰角网络所有
-- `assets/audio/*.ogg` —— 由游戏内 `autochess_b_ui_*` 音效转码而来，版权归上海鹰角网络所有
+- 角色形象基于《明日方舟》游戏截图二次创作（可露希尔），角色形象权利归原权利人
+- `assets/video/` 与角色形象**不在 MIT 授权范围内**：仅限个人本机娱乐使用；再分发前请自行确认你拥有相应权利。
+- 本项目不声称对角色形象本身拥有权利；若权利方提出异议，请停止使用并删除相关文件。
 
-这些资源仅限**个人本机自用**。若要公开分发本插件，必须：
-1. 从仓库与打包产物中移除上述文件；
-2. 改为由使用者从自己的游戏安装中提取后本地生成；
-3. 在 README 中说明清楚。
+## 音效
 
-## Spine 运行时
-
-- `assets/vendor/spine-webgl.js`、`assets/vendor/spine-canvas.js` —— Esoteric Software Spine Runtimes 3.8，采用 Spine Runtimes License（商业使用需授权，个人/内部使用遵循其许可条款）。详见 <https://esotericsoftware.com/spine-runtimes-license>。
+- `assets/audio/*.ogg` 借用自游戏内音效，相关权利归原权利人所有，**不在 MIT 授权范围内**。
+  仅限个人本机娱乐使用；再分发前请自行确认权利。
 
 ## 字体
 
-- `assets/fonts/ark-pixel-12px-zh_hans.woff2` —— Ark Pixel Font，作者 TakWolf，SIL Open Font License 1.1，许可证随包放在 `assets/fonts/OFL.txt`。
+- `assets/fonts/ark-pixel-12px-zh_hans.woff2` —— Ark Pixel Font，作者 TakWolf，
+  SIL Open Font License 1.1。许可证全文见 `assets/fonts/OFL.txt`。
+  分发时须随附该许可证文件；不得单独售卖该字体；修改版不得使用保留字体名。
 
 ## 设置与数据文件
 
-运行后会在 `$DSH_HOME/.dshcl.json` 写入设置与当日花费统计（`settings` / `spend`）。
-卸载插件时可手动删除该文件；不删也不会影响 DSH 其他功能。
+运行后会在 `$DSH_HOME/.dshcl.json` 写入设置与当日花费统计
+（`settings` / `spend`）。该文件仅保存在本地，插件不收集、不上传任何数据。
+卸载插件时可手动删除该文件；不删也不会影响 DSH 其他功能，插件本身不自动清理。
+
+## 免责
+
+本项目按“现状”提供，不附带任何明示或暗示的担保。使用者应在遵守所在
+司法辖区法律的前提下自行承担使用风险。

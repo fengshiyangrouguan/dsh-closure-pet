@@ -6,18 +6,16 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
-const clientSrc = fs.readFileSync(path.join(root, 'client.js'), 'utf8')
-const injectSrc = fs.readFileSync(path.join(root, 'lib/inject.js'), 'utf8')
+const clientSrc = fs.readFileSync(path.join(root, 'lib/client.js'), 'utf8')
 
-test('manifest：dsh.client 与 ./client 导出', () => {
+test('manifest：dsh.client 与打包后的 ./client 入口', () => {
   assert.equal(pkg.dsh.client.platform, 'web')
-  assert.equal(pkg.dsh.client.immediately, true)
-  assert.equal(pkg.exports['./client'], './client.js')
-  assert.ok(pkg.files.includes('client.js'))
-  assert.equal(pkg.version, '1.0.0')
+  assert.equal(pkg.exports['./client'], './lib/client.js')
+  assert.ok(pkg.files.includes('lib'))
+  assert.equal(pkg.version, '2.0.0')
 })
 
-test('客户端产物：注册 shell.overlay 的 lazy factory', () => {
+test('客户端产物：自包含 bundle 注册 shell.overlay', () => {
   let def = null
   const fakeWindow = { __ModuleLoader__: { load(d) { def = d } } }
   new Function('window', clientSrc)(fakeWindow)
@@ -51,7 +49,7 @@ test('客户端产物：注册 shell.overlay 的 lazy factory', () => {
   assert.equal(typeof registered.component, 'function')
 })
 
-test('注入行带客户端插件互斥守卫（回退路径）', () => {
-  assert.ok(injectSrc.includes('__dshClosurePetClientActive'))
-  assert.ok(injectSrc.includes('/pet.js'))
+test('不再保留 index 注入回退', () => {
+  assert.equal(fs.existsSync(path.join(root, 'lib/inject.js')), false)
+  assert.equal(fs.existsSync(path.join(root, 'assets/pet.js')), false)
 })

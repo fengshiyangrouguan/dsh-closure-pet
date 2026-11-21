@@ -4,12 +4,10 @@
 // 注意 STARTUP_DELAY / STARTUP_GAP 在模块加载时读一次 localStorage（可用控制台覆盖）。
 
 export const PREFIX = '/dsh-closure'
-export const MODEL = 'ac_s_closur_spine'
 export const CANVAS_W = 300
 
-// 取景框：不是骨架自带的 authoring viewport（425.32×333.22），
-// 而是「所有动画真实顶点范围的并集」（tools/measure-bounds.mjs，本地工具，未入库）：
-// Happy 抬手时高度到 373.4，比作者视口高出 40，用视口取景会被裁掉。
+// 取景框：所有动画真实顶点范围的并集（本地测量得到，固定不再变）。
+// Happy 抬手时高度到 373.4，比角色通常占位高出一截，用固定取景会被裁掉。
 export const FRAME = { x: -229.1, y: -10.6, w: 443.6, h: 373.4 }
 
 export const FRAMING = 1.04

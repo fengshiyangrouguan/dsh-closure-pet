@@ -416,7 +416,7 @@ export function createBubble(deps) {
   }
 
   function refreshBubble() {
-    if (!pet.skeleton || !pet.pos) return
+    if (!pet.pos) return
     ensureFont()
     ensureBubble()
     var lines = bubbleLines()

@@ -12,6 +12,7 @@ import { HAPPY_CHANCE } from '../anim/library.js'
 export function createState(deps) {
   var layers = deps.layers
   var playOverlay = deps.playOverlay
+  var playSad = deps.playSad
   var syncAnimation = deps.syncAnimation
   var showBubble = deps.showBubble
   var refreshBubble = deps.refreshBubble
@@ -36,17 +37,18 @@ export function createState(deps) {
   var TOOL_WINDOW_MAX = 3      // 窗口内最多播几次
   var lowBalance = false
 
-  function toolOverlay(name) {
+  // kind='happy' 是概率性庆祝；kind='sad' 必播，且统一走 playSad()。
+  function toolOverlay(kind) {
     if (layers.overlay === 'Interact') return false // 用户点击优先
-    // 成功是"概率性庆祝"，失败仍然必报
-    if (name === 'Happy' && Math.random() > HAPPY_CHANCE) return false
+    if (kind === 'happy' && Math.random() > HAPPY_CHANCE) return false
     var now = Date.now()
     toolPlayTimes = toolPlayTimes.filter(function (t) { return now - t < TOOL_WINDOW })
     var last = toolPlayTimes.length ? toolPlayTimes[toolPlayTimes.length - 1] : 0
     if (now - last < TOOL_MIN_GAP) return false
     if (toolPlayTimes.length >= TOOL_WINDOW_MAX) return false
     toolPlayTimes.push(now)
-    playOverlay(name)
+    if (kind === 'happy') playOverlay('Happy')
+    else playSad()
     return true
   }
 
@@ -72,8 +74,8 @@ export function createState(deps) {
     } else if (balanceOk && low !== lowBalance) {
       lowBalance = low
       layers.base = low ? 'Sad_Idle' : 'Idle'
-      // 变低 → 难过一次；恢复 → 充值成功式（Special_A），不是难过
-      playOverlay(low ? 'Sad_Begin' : 'Special_A')
+      // 变低 → 由导演在进入 Sad_Idle 前统一补 Sad_Begin；恢复 → 充值成功式（Special_A）
+      if (!low) playOverlay('Special_A')
       // 若同一轮还带 topUpSeq，交给下面的"充值到账"分支报，避免两句话打架
       var sameTickTopUp = s.topUpSeq > ((prev && prev.topUpSeq) || 0)
       if (low || !sameTickTopUp) showBubble(low ? '博士！预算快见底了\n该批经费啦！' : '经费到账\n可露希尔继续为你效力~')
@@ -83,8 +85,8 @@ export function createState(deps) {
     if (prev) {
       if (s.tools && prev.tools) {
         // 工具成功：只保留概率性的 Happy 动画，不出气泡、不播音效
-        if (s.tools.ok > prev.tools.ok) toolOverlay('Happy')
-        if (s.tools.fail > prev.tools.fail && toolOverlay('Sad_Begin')) {
+        if (s.tools.ok > prev.tools.ok) toolOverlay('happy')
+        if (s.tools.fail > prev.tools.fail && toolOverlay('sad')) {
           showBubble('工具调用失败' + (s.tools.lastFailName ? '：' + s.tools.lastFailName : ''))
           playSound('fail')
         }
@@ -94,7 +96,7 @@ export function createState(deps) {
       var curErrCount = (s.errors && s.errors.count) || 0
       if (curErrCount > prevErrCount) {
         var errMsg = String((s.errors && s.errors.message) || '').slice(0, 40)
-        playOverlay('Sad_Begin')
+        playSad()
         showBubble('出错了' + (errMsg ? '：' + errMsg : ''), 4600)
         playSound('fail')
       }
@@ -112,17 +114,18 @@ export function createState(deps) {
           // 完成不播动画、不播音效，只把信息对话框叫出来（余额/今日/本轮/峰谷）
           showBubble()
         } else if (kind === 'error') {
-          playOverlay('Sad_Begin')
+          playSad()
           showBubble('啧，这次出错了博士……')
           playSound('turnfail')
         } else {
-          playOverlay('Sad_Begin')
+          playSad()
           showBubble('欸？怎么突然掐断了？')
           playSound('turnfail')
         }
       }
       if (s.periodSeq > prev.periodSeq) {
-        playOverlay(s.period === 'peak' ? 'Sad_Begin' : 'Special_A') // 谷时用 Special_A（充值式），不用 Happy
+        if (s.period === 'peak') playSad()
+        else playOverlay('Special_A') // 谷时用充值式，不用 Happy
         showBubble(s.period === 'peak' ? '开始按原价收费了哦博士~' : '可露希尔大减价时间到~\n冲啊博士！')
       }
     }

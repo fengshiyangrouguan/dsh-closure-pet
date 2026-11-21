@@ -1,28 +1,39 @@
 // dsh-closure-pet — 动画数据表
 //
-// 只放数据，不放状态机：状态机在 main.js 里（后续 P1 第二步会拆出 director）。
-// LOOP_RANGES 会被调试接口 setLoop 修改，所以导出的是可变对象。
+// 每段动画对应一个透明视频片段：素材路径、时长与是否循环都写在这里。
+// 需要改动画只改这张表；状态机在 anim/director.js，不在这里。
 
-// 循环区间：某些动画整段首尾接不上，只取中间一段做循环（由 tools/loop-finder 取点，本地工具，未入库）
-//   from/to 单位秒；null 表示"整套循环"。
-export const LOOP_RANGES = {
-  // 思考：1.59s 是一次点头的起点，2.10s 是这次点头的收束点。
-  // 乒乓只在这 0.51s 内来回，等于把"点一下头"做成无缝循环。
-  Special_B: { from: 1.59, to: 2.10 },
-}
+// 交互动画结束回状态层时的淡化时长（ms）；其余切换一律硬切。
+export const CLIP_FADE_MS = 320
+// 每次进入思考状态，播一遍完整思考动画的概率；没抽中就继续待机。
+export const THINK_CHANCE = 0.5
 
-// 循环模式：'wrap'（到 to 回卷到 from）或 'pingpong'（正放完倒放回来）。
-// Special_B 的背景飞行物轨迹首尾对不上（接缝差 4.16%），任何子区间都会有跳变，
-// 所以改成乒乓：位置连续、没有接缝，代价是速度方向每 2.67s 反转一次。
-export const LOOP_MODES = {
-  Special_B: 'thinkcycle',
-}
-
-// 思考循环：先正放到 from（点头起点），在 [from,to] 内乒乓一段随机时长，
-// 再顺势播到结尾，然后从 0 重新开始下一轮。
-export const THINK_NOD_MIN_MS = 1200
-export const THINK_NOD_MAX_MS = 3200
+// 思考期间两次掷骰的最小间隔；抽中后播完整段，播完再等一个间隔。
+export const THINK_ROLL_MS = 10000
 
 // 工具调用成功 → 播 Happy 的概率（失败仍然必播 Sad_Begin）
 export const HAPPY_CHANCE = 0.25
 
+// 「难过」类表演只认这一个入口：改动画只改这里。
+export const SAD_ENTRY = 'Sad_Begin'
+
+// 当前可用的交互动画：暂时只保留后半段，A 的素材保留但不出现在抽取池里。
+export const INTERACT_ACTIONS = ['Interact_B']
+
+// 片段表：src 相对 /assets/video/；duration 只用于调试与取整，播放以 video 元素为准。
+export const CLIPS = {
+  Idle: { src: 'idle.webm', duration: 1.467, loop: true },
+  Sad_Idle: { src: 'sad_idle.webm', duration: 2.133, loop: true },
+  Happy: { src: 'happy.webm', duration: 2.833 },
+  Sad_Begin: { src: 'sad_begin.webm', duration: 2.567 },
+  Special_A: { src: 'special_a.webm', duration: 2.0 },
+  Special_B: { src: 'special_b.webm', duration: 2.667 },
+  Talk: { src: 'talk.webm', duration: 5.0 },
+  Interact_A: { src: 'interact_a.webm', duration: 2.1 },
+  Interact_B: { src: 'interact_b.webm', duration: 3.833 },
+}
+
+// 可被调试接口 / 文档直接列出的动画名（Interact 的两段在内部合并展示）。
+export const ANIMATION_NAMES = [
+  'Idle', 'Sad_Idle', 'Happy', 'Sad_Begin', 'Special_A', 'Special_B', 'Talk', 'Interact',
+]

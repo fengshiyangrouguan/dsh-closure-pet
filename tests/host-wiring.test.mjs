@@ -9,17 +9,17 @@ import { Readable } from 'node:stream'
 const tmpHome = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-pet-host-'))
 process.env.DSH_HOME = tmpHome
 
-const { default: plugin } = await import('../lib/index.js')
+const { apply, inject, name } = await import('../lib/index.js')
 
-function makeRoot() {
+function makeRoot(routes, cleanups) {
   const handlers = {}
-  const effects = []
-  const injects = []
   return {
-    handlers, effects, injects,
+    handlers,
+    name,
     on(ev, fn) { (handlers[ev] || (handlers[ev] = [])).push(fn); return () => {} },
-    effect(fn) { effects.push(fn()) },
-    inject(deps, cb) { injects.push({ deps, cb }) },
+    effect(fn) { cleanups.push(fn()) },
+    webServer: { register(route) { routes.push(route); return () => {} } },
+    get(service) { return service === 'connection' ? { requestRejection: () => false } : null },
   }
 }
 
@@ -50,43 +50,24 @@ async function callRoute(routes, pathname, method, body) {
   return out
 }
 
-test('apply() 注册注入行、事件与全部路由', async (t) => {
-  const root = makeRoot()
-  plugin.apply(root)
-
-  assert.equal(root.injects.length, 1, '应注入 webServer/connection')
-  assert.deepEqual(root.injects[0].deps, ['webServer', 'connection'])
-
-  // 注入行
-  const table = []
-  root.handlers['webserver/index-inject'][0](table)
-  assert.equal(table.length, 1)
-  assert.equal(table[0].kind, 'script')
-  assert.ok(table[0].text.includes('/dsh-closure/pet.js'))
+test('apply() 注册事件与全部路由', async (t) => {
+  const routes = []
+  const cleanups = []
+  const root = makeRoot(routes, cleanups)
+  assert.deepEqual(inject, ['webServer', 'connection'])
+  apply(root)
 
   // 事件订阅
   for (const ev of ['session/event', 'agent/assistant-stream', 'tools/result', 'agent/error', 'agent/status']) {
     assert.ok(root.handlers[ev] && root.handlers[ev].length === 1, 'missing event ' + ev)
   }
 
-  // 路由
-  const routes = []
-  const cleanups = []
-  const ctx = {
-    webServer: { register(route) { routes.push(route); return () => {} } },
-    get(name) { return name === 'connection' ? { requestRejection: () => false } : null },
-    effect(fn) { cleanups.push(fn()) },
-  }
-  root.injects[0].cb(ctx)
-
   const paths = routes.map((r) => r.kind + ' ' + r.path)
   assert.deepEqual(paths, [
     'exact /dsh-closure/ping',
-    'exact /dsh-closure/pet.js',
     'exact /dsh-closure/state',
     'exact /dsh-closure/config',
     'prefix /dsh-closure/assets',
-    'prefix /dsh-closure/src',
   ])
 
   t.after(async () => {

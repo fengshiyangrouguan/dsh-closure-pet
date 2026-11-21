@@ -1,12 +1,12 @@
 {
   "name": "dsh-closure-pet",
-  "version": "1.0.0",
-  "description": "可露希尔桌宠：豪堪小动画、余额与花费提示",
+  "version": "2.0.0",
+  "description": "可露希尔桌宠（基于游戏截图的二次创作）：透明动画、余额与花费提示",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./client": "./client.js",
+    "./client": "./lib/client.js",
     "./icon": "./icon.png",
     "./package.json": "./package.json",
     "./locale/*": "./locale/*"
@@ -17,7 +17,6 @@
     "lib",
     "assets",
     "tests",
-    "client.js",
     "icon.png",
     "cordis.patch.yml",
     "README.md",
@@ -25,13 +24,14 @@
     "LICENSE"
   ],
   "scripts": {
+    "build:client": "node tools/build-client.mjs",
     "test": "node --test \"tests/*.test.mjs\"",
-    "check": "node --check lib/index.js && node --check client.js && node --check assets/src/main.js && node --check assets/pet.js"
+    "check": "node --check lib/index.js && node --check assets/src/main.js && node --check assets/src/client-entry.js"
   },
   "keywords": [
     "dsh-plugin",
     "desktop-pet",
-    "spine",
+    "video",
     "arknights",
     "closure",
     "pixel-art"
@@ -41,8 +41,7 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
-      "platform": "web",
-      "immediately": true
+      "platform": "web"
     }
   },
   "engines": {
@@ -57,6 +56,9 @@
     "url": "https://github.com/fengshiyangrouguan/dsh-closure-pet/issues"
   },
   "license": "MIT",
-  "author": "FSYRG"
+  "author": "FSYRG",
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
 }
 

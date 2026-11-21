@@ -22,11 +22,15 @@ SOFTWARE.
 
 ---
 
-注意 / Note:
+注意 / Note
 
-本许可只覆盖本仓库的**代码**。随包的第三方资源各有其许可，见 NOTICE.md：
+本 MIT 许可覆盖本仓库的**代码**（`lib/`、`assets/src/`、`client.js`、`assets/pet.js` 等）。
+以下内容不在 MIT 授权范围内：
 
-- 《明日方舟》可露希尔 Spine 模型、贴图、音效：版权归上海鹰角网络，
-  仅限个人本机自用，**不得随本仓库公开分发**。
-- Spine Runtimes 3.8：遵循 Esoteric Software Spine Runtimes License。
-- Ark Pixel Font：SIL Open Font License 1.1（见 assets/fonts/OFL.txt）。
+- `assets/video/` 与角色形象：仅限个人本机娱乐使用；再分发前请自行确认你拥有相应权利。
+- `assets/audio/`：借用自游戏内音效，相关权利归原权利人所有。本项目不就此授予任何权利；
+  再分发或使用前请阅读 NOTICE.md，并自行确认你已获得权利方许可。
+- `assets/fonts/`：Ark Pixel Font，SIL Open Font License 1.1（见 `assets/fonts/OFL.txt`）。
+
+角色形象基于《明日方舟》游戏截图二次创作，非官方素材，本项目不声称对其拥有权利。
+完整说明见 NOTICE.md。

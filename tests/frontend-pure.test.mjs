@@ -49,10 +49,16 @@ test('静态命中区：尺寸、覆盖率、中心/角落/越界', () => {
 })
 
 test('动画数据表', () => {
-  assert.deepEqual(lib.LOOP_RANGES.Special_B, { from: 1.59, to: 2.1 })
-  assert.equal(lib.LOOP_MODES.Special_B, 'thinkcycle')
+  assert.equal(lib.CLIPS.Idle.loop, true)
+  assert.equal(lib.CLIPS.Sad_Idle.loop, true)
+  assert.equal(lib.CLIPS.Special_B.loop, undefined)
+  assert.equal(lib.CLIPS.Talk.loop, undefined)
+  assert.ok(lib.CLIPS.Special_B.duration > 2.5)
+  assert.ok(lib.CLIPS.Interact_A.duration + lib.CLIPS.Interact_B.duration > 5.9)
   assert.equal(lib.HAPPY_CHANCE, 0.25)
-  assert.ok(lib.THINK_NOD_MIN_MS < lib.THINK_NOD_MAX_MS)
+  assert.ok(lib.THINK_CHANCE > 0 && lib.THINK_CHANCE <= 1)
+  assert.deepEqual(lib.INTERACT_ACTIONS, ['Interact_B'])
+  assert.ok(lib.CLIP_FADE_MS >= 100 && lib.CLIP_FADE_MS <= 600)
 })
 
 test('音效工厂', () => {

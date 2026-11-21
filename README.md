@@ -1,29 +1,30 @@
 # dsh-closure-pet
 
-《明日方舟》可露希尔卫戍协议皮肤的 DeepSeek Harness 桌宠插件：动画交互、像素气泡、余额与花费提示。
+基于《明日方舟》游戏截图二次创作的可露希尔桌宠，运行在 DeepSeek Harness 界面上：透明动画、像素气泡、余额与花费提示。
 
-> 仅个人自用。**不得二次分发**。字体使用 Ark Pixel（SIL OFL 1.1，见 `assets/fonts/OFL.txt`）。
+> **声明**：本插件是个人二次创作，角色形象取自游戏截图，角色形象权利归原权利人；动画为本项目自行制作的透明视频，音效借用自游戏内音效（权利归原权利人）。
+> 本插件的代码可按 MIT 许可证使用；角色形象、音效与动画不在 MIT 授权范围内，仅限个人本机娱乐使用，再分发前请自行确认权利。字体使用 Ark Pixel（SIL OFL 1.1，见 `assets/fonts/OFL.txt`）。完整说明见 [`NOTICE.md`](NOTICE.md)。
 
 ## 结构
 
 ```
-lib/index.js                  宿主入口：装配（store / events / inject / routes）
+lib/index.js                  宿主入口：装配（store / events / routes）
 lib/store.js                  运行时状态、花费累计、持久化、余额轮询
 lib/events.js                 DSH 事件订阅（session/event、agent/*、tools/result）
-lib/inject.js                 index 注入行
-lib/routes.js                 /ping、/pet.js、/state、/config、/assets/*、/src/*
+lib/routes.js                 /ping、/state、/config、/assets/*
 lib/period.js                 峰谷时段（纯函数，北京时间）
 lib/billing.js                计费价目与单条消息花费（纯函数）
-client.js                     客户端插件产物：注册到 shell.overlay，动态加载 /src/main.js
-assets/pet.js                 浏览器入口：动态 import 模块图（经典脚本，兼容旧注入行）
-assets/src/                   前端 ES modules
-  main.js                     组合根：DOM、渲染循环、状态机、轮询、开屏、实例装配
+lib/client.js                 客户端 bundle（esbuild 打包，自包含，注册到 shell.overlay）
+assets/src/                   前端源码（打包进 lib/client.js，不直接由宿主提供）
+  client-entry.js             客户端 bundle 入口：factory / slot 注册
+  main.js                     组合根：DOM、位置、交互、装配
   core/env.js                 常量 / 日志
   core/settings.js            设置读写与持久化
   shared/protocol.js          前后端共享协议（版本 / 路径 / 设置归一化）
   render/hit-test.js          静态命中区（图元 → 128×108 掩码）
-  anim/library.js             动画数据表（循环区间 / 模式 / 参数）
-  anim/director.js            动画导演（分层状态机 / 分段 / Talk 锁 / 思考与乒乓）
+  render/video-player.js      透明视频播放：A/B 双缓冲 + 交叉淡化
+  anim/library.js             片段表（路径 / 时长 / 循环 / 节奏参数）
+  anim/director.js            动画导演（分层状态机 / 分段 / Talk 锁 / 思考掷骰）
   audio.js                    音效（工厂）
   ui/layout.js                位置 / 吸附 / 翻转（工厂）
   ui/panel.js                 设置面板（工厂）
@@ -31,8 +32,7 @@ assets/src/                   前端 ES modules
   ui/sticker.js               谷价贴画（工厂）
   input/drag.js               点击 / 拖拽 / 右键（工厂）
   io/state.js                 宿主状态轮询 + applyState 事件分发
-assets/spine/                 模型（json / atlas / png）
-assets/vendor/                Spine 3.8 官方运行时（webgl / canvas）
+assets/video/                 9 段透明动画（888×748，WebM VP9-alpha）
 assets/fonts/                 Ark Pixel 12px + OFL
 assets/audio/                 click / fail / coin / turnfail（Opus 56k）
 tests/                        node --test 用例（宿主纯函数 / 前端模块 / DOM 桩接线）
@@ -63,18 +63,17 @@ https://github.com/fengshiyangrouguan/dsh-closure-pet
 
 同样需要把 `dsh-closure-pet` 放进 `dsh.profile.bundles`。
 
-> ⚠️ 本仓库随包带有游戏素材（Spine 模型 / 音效），请把仓库设为 **private**，不要公开分发，详见 `NOTICE.md`。
-
 ## 开发
 
 | 改动 | 生效方式 |
 |---|---|
-| `assets/src/**`、模型、字体、音效 | 页面 **Ctrl+R** |
-| `assets/pet.js`（入口，基本不动） | 页面 **Ctrl+R** |
+| `assets/src/**` | `npm run build:client` 后页面 **Ctrl+R** |
+| `assets/video/**`、`assets/audio/**`、字体 | 页面 **Ctrl+R** |
 | `lib/index.js` | 插件管理里关→开（重新 import 模块） |
-| `cordis.patch.yml`（注入行变化） | 重启 DSH |
+| `lib/client.js` | 由 `npm run build:client` 生成，不手改 |
+| `cordis.patch.yml` | 重启 DSH |
 
-> 新增了 `/dsh-closure/src/*` 路由（把 `assets/src/` 暴露给浏览器做 ES module 解析）。从旧版本升级后需要把插件**关→开一次**，再 Ctrl+R；宿主只在加载时注册一次路由。
+> 客户端 bundle 由 DSH 以 `/plugins/dsh-closure-pet/client.js` 提供，热启用/停用无需刷新页面；改了源码就要先重新构建 bundle，再 Ctrl+R。
 
 测试（零依赖，Node 内置 runner）：
 
@@ -83,27 +82,34 @@ node --test "tests/*.test.mjs"   # 或 npm test
 ```
 
 - `tests/host-pure.test.mjs`：峰谷/节假日、计费、北京时间归日
-- `tests/frontend-pure.test.mjs`：常量、设置合并、静态命中区、动画表、音效/布局工厂
+- `tests/frontend-pure.test.mjs`：常量、设置合并、静态命中区、片段表、音效/布局工厂
 - `tests/frontend-wiring.test.mjs`：DOM 桩下创建面板/气泡/贴画/导演/状态/拖拽，验证依赖注入与监听注册
+- `tests/client-artifact.test.mjs`：`lib/client.js` 是自包含 bundle，注册 `shell.overlay` 且不依赖注入回退
 
 调试接口挂在 `window.__dshClosurePet`：`play(name)`、`showBubble()`、`settings`、`layers`、`debug`、`startup`、`dispose()` 等。
 
-## 客户端插件与回退
+## 客户端插件
 
-插件有两条加载路径，同一时刻只会生效一条：
+只有一条加载路径：`package.json` 的 `dsh.client` 把 `lib/client.js` 注册为客户端 bundle，DSH 以 `/plugins/dsh-closure-pet/client.js` 提供并执行它；bundle 自己把组件注册到 `shell.overlay`（frame-wide 浮层），组件挂载时调用 `startPet()` 创建桌宠，卸载时调用返回的 `dispose()`。
 
-1. **客户端插件**（`client.js` + `package.json` 的 `dsh.client`）：DSH 客户端加载器把组件注册到 `shell.overlay`（frame-wide 浮层）；组件挂载时创建容器并动态 `import('/dsh-closure/src/main.js')`，卸载时调用 `__dshClosurePet.dispose()`。加载成功后设置 `window.__dshClosurePetClientActive`。
-2. **注入行回退**（`lib/inject.js`）：客户端插件没加载（版本不匹配、加载失败）时，仍通过 `webserver/index-inject` 注入 `/pet.js`；检测到上面的标志就跳过，避免双开。
-
-桌宠 DOM 挂到客户端插件提供的容器里；没有容器时退回 `document.body`。`window.__dshClosurePet.dispose()` 可手动卸载（停 rAF、清定时器、移除监听与 DOM）。
+- 不再有 `webserver/index-inject` 注入行，也不再有 `/pet.js` 回退路径；
+- bundle 是自包含的，不从宿主路由动态 import 前端代码，热启用不依赖宿主路由时序；
+- `window.__dshClosurePet` 仍是调试入口，`dispose()` 可手动卸载（停视频、清定时器、移除监听与 DOM）。
 
 ## 动画状态机
 
 | 层 | 用途 |
 |---|---|
 | `overlay` | 一次性动画：Happy / Sad_Begin / Special_A / Interact |
-| `work` | 进行中：Special_B（思考，循环节 1.59–2.10s）/ Talk（输出，强制播完） |
+| `work` | 进行中：Special_B（思考）/ Talk（输出，强制播完） |
 | `base` | 常态：Idle / Sad_Idle（余额偏低） |
+
+- **片段表**：`anim/library.js` 里每段动画对应一个透明视频（`assets/video/*.webm`），循环与时长都写在同一处。
+- **播放**：A/B 两个 `<video>` 交替；新片段加载就绪后才交换 `is-front`。只有交互动画结束回状态层做一次 320ms 交叉淡化，其余切换一律硬切。
+- **思考**：进入思考后的第一次必定播一遍完整的 `Special_B`；之后每隔 10 秒掷一次骰，50% 概率再播一遍，播完回待机。播放期间不掷骰、不重触发。
+- **输出**：Talk 强制播完一遍；输出未结束时从头再播，期间状态切换被挂起，播完再兑现。
+- **互动**：`Interact_A` 暂时停用，只播后半段 `Interact_B`，播完回状态层并做一次 320ms 淡化。
+- **难过基态**：任何状态回到 `Sad_Idle` 之前，都由导演统一先播一遍 `Sad_Begin`，不靠各事件分支自己补。
 
 触发源：`agent/assistant-stream`、`tools/result`、`agent/error`、`agent/status`、`session/event`（`assistant/message` 计费、`turn/end` 结束）、账户余额（60s 轮询）。
 
@@ -123,7 +129,7 @@ node --test "tests/*.test.mjs"   # 或 npm test
 
 按住桌宠后，页面交互会一直冻结到松手：文字选不中、图片/链接拖不走、下面的元素不 hover 也不会被点穿，指针滑过 iframe 也不会被里面的文档抢走。
 
-实现见 `assets/pet.js` 的 `beginDragLock` / `endDragLock`：
+实现见 `assets/src/input/drag.js` 的 `beginDragLock` / `endDragLock`：
 
 - 命中桌宠的 `pointerdown`（window 捕获阶段）直接 `preventDefault + stopImmediatePropagation`（选区/焦点/原生拖拽都是这次按下的默认动作，页面也收不到这次按下）
 - 按下到松手之间，在捕获阶段拦掉 `mousedown` / `selectstart` / `dragstart`（`pointerdown` 的 `preventDefault` 不保证压掉兼容的 `mousedown`）
@@ -134,19 +140,11 @@ node --test "tests/*.test.mjs"   # 或 npm test
 
 ## 性能
 
-- 空闲（仅基础层）渲染 **30fps**，工作和交互时 60fps
-- 页面隐藏时停止渲染，状态轮询从 1s 降到 5s
+- 角色不再逐帧绘制：视频由浏览器解码，主线程只处理位置与交互
+- 换片段走双缓冲：前台继续播，后台加载，就绪后再淡化，避免加载空档
+- 页面隐藏时暂停视频，状态轮询从 1s 降到 5s
 - 像素气泡按需创建；文本测量有缓存
-- 命中测试用**静态命中区**（11 个图元 → 128×108 掩码），按下只查表、不读 GPU；`preserveDrawingBuffer` 已关闭
-- WebGL 关闭 MSAA（`antialias:false`）：像素画看不出差别，省掉每帧 4× 采样与 resolve
-
-## 渲染降级
-
-优先 WebGL（`SceneRenderer`）；拿不到 WebGL 上下文时自动切到 **canvas 2D**（`spine-canvas` 的 `SkeletonRenderer`，三角形模式以支持网格附件）。
-
-- 自动：远程桌面 / 老显卡 / 浏览器禁用 WebGL 时
-- 手动验证：地址栏加 `?canvas=1`，或控制台 `localStorage.setItem('dshcl-force-canvas','1')` 后刷新
-- 降级模式下命中测试仍是同一个静态命中区（与渲染模式无关），拖拽、气泡、贴画行为一致
+- 命中测试用**静态命中区**（11 个图元 → 128×108 掩码），按下只查表、不读 GPU
 
 ## 峰谷时段维护
 
@@ -160,7 +158,7 @@ node --test "tests/*.test.mjs"   # 或 npm test
 
 ## 卸载
 
-1. 在插件管理里关掉（注入行要**重启 DSH** 才会消失，桌面端会缓存注入）
+1. 在插件管理里关掉（客户端 bundle 会随停用卸载；宿主代码改动才需要重启 DSH）
 2. 从 profile 的 `dependencies` 与 `dsh.profile.bundles` 里移除
 3. 可选：删掉 `$DSH_HOME/.dshcl.json`（设置与当日花费统计）
 
@@ -169,3 +167,7 @@ node --test "tests/*.test.mjs"   # 或 npm test
 ## 计费口径
 
 `assistant/message` 的 `usage` → `cacheRead×谷/峰价 + input×未命中价 + output×输出价`，价目内置于 `lib/index.js`（每百万 token，`[谷价, 峰价]`）。峰谷按北京时间：周末与节假日全天谷价，工作日 09–12、14–18 为峰时。
+
+## 贡献
+
+- **IPC-Wolf**（<https://github.com/IPC-Wolf>）：拖动时气泡实时跟随与命中区 grab 光标；气泡分级排版、气泡缩放 100% 基准与使用源脚注；边缘吸附强度可调（0%–200%）。

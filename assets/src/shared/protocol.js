@@ -5,7 +5,7 @@
 //   · 协议版本（/state、/config 响应里带 schemaVersion/version）
 //   · 设置默认值与归一化规则（宿主落盘、浏览器 localStorage 共用同一套 clamp）
 //
-// 该文件必须保持「纯数据 + 纯函数」：浏览器会通过 /dsh-closure/src/shared/protocol.js 加载它。
+// 该文件必须保持「纯数据 + 纯函数」：宿主直接 import，浏览器侧由 esbuild 打进 lib/client.js。
 
 export const SCHEMA_VERSION = 1
 
