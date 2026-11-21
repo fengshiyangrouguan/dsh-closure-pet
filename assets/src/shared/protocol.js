@@ -12,6 +12,7 @@ export const SCHEMA_VERSION = 1
 export const URL_PREFIX = '/dsh-closure'
 export const STATE_PATH = URL_PREFIX + '/state'
 export const CONFIG_PATH = URL_PREFIX + '/config'
+export const HARDWARE_PATH = URL_PREFIX + '/hardware'
 
 export const SIZE_MIN = 0.6
 export const SIZE_MAX = 2.0
@@ -35,6 +36,8 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   opacity: 1,
   sound: true,
   volume: 0.7,
+  // 硬件状态挂牌（CPU / 内存 / GPU 实时读数）：默认关，右键面板里开
+  plate: false,
 })
 
 /**
@@ -62,5 +65,6 @@ export function normalizeSettings(raw, base) {
   if (typeof raw.sound === 'boolean') out.sound = raw.sound
   const volume = Number(raw.volume)
   if (Number.isFinite(volume)) out.volume = Math.min(1, Math.max(0, volume))
+  if (typeof raw.plate === 'boolean') out.plate = raw.plate
   return out
 }
