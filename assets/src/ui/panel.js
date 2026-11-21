@@ -170,6 +170,25 @@ export function createPanel(deps) {
     syncTiersBtn()
     tiersRow.appendChild(tiersBtn)
 
+    // 硬件挂牌（CPU / 内存 / GPU 实时读数，默认关）
+    var plateRow = row('硬件挂牌')
+    var plateBtn = document.createElement('button')
+    plateBtn.style.cssText = 'padding:3px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.18);' +
+      'background:rgba(255,255,255,.06);color:#dfe4f0;font:inherit;cursor:pointer'
+    function syncPlateBtn() {
+      plateBtn.textContent = settings.plate ? '开' : '关'
+      plateBtn.style.background = settings.plate ? 'rgba(125,134,255,.85)' : 'rgba(255,255,255,.06)'
+      plateBtn.style.color = settings.plate ? '#fff' : '#dfe4f0'
+    }
+    plateBtn.addEventListener('click', function () {
+      settings.plate = !settings.plate
+      syncPlateBtn()
+      saveSettings(true)
+      if (deps.applyPlate) deps.applyPlate()
+    })
+    syncPlateBtn()
+    plateRow.appendChild(plateBtn)
+
     // 气泡开关
     var bubbleRow = row('气泡')
     var bubbleBtn = document.createElement('button')
@@ -274,6 +293,7 @@ export function createPanel(deps) {
     return {
       syncMirrorButtons: syncMirrorButtons,
       syncTiersBtn: syncTiersBtn,
+      syncPlateBtn: syncPlateBtn,
       slider: slider,
       sizeText: sizeText,
       snapSlider: snapSlider,
@@ -294,6 +314,7 @@ export function createPanel(deps) {
       panelApi.bubbleScaleSlider.value = String(settings.bubbleScale)
       panelApi.bubbleScaleText.textContent = Math.round(settings.bubbleScale) + '%'
       panelApi.syncTiersBtn()
+      panelApi.syncPlateBtn()
       panelApi.syncMirrorButtons()
     }
     panel.style.display = 'block'

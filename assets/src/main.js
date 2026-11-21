@@ -34,6 +34,7 @@ import { createLayout } from './ui/layout.js'
 import { createPanel } from './ui/panel.js'
 import { createBubble } from './ui/bubble.js'
 import { createSticker } from './ui/sticker.js'
+import { createPlate } from './ui/plate.js'
 import { createDrag } from './input/drag.js'
 import { createDirector } from './anim/director.js'
 import { createVideoPlayer } from './render/video-player.js'
@@ -116,7 +117,9 @@ export function startPet(mountContainer) {
   var layoutUi = createLayout({ host: host, canvas: stage, settings: settings, pet: pet })
   var size = layoutUi.size
   var clampPos = layoutUi.clampPos
-  var applyPosition = layoutUi.applyPosition
+  // 位置一变，头顶的硬件挂牌也要跟着走（拖拽 / 吸附 / 缩放都会经过这里）。
+  var applyPositionRaw = layoutUi.applyPosition
+  function applyPosition() { applyPositionRaw(); followPlate() }
   var setFlipped = layoutUi.setFlipped
   var applyOpacity = layoutUi.applyOpacity
   var resolveFlip = layoutUi.resolveFlip
@@ -124,8 +127,10 @@ export function startPet(mountContainer) {
   var loadPos = layoutUi.loadPos
   var savePos = layoutUi.savePos
   var placeFromStorage = layoutUi.placeFromStorage
-  var repositionForAnchor = layoutUi.repositionForAnchor
-  var settle = layoutUi.settle
+  var repositionForAnchorRaw = layoutUi.repositionForAnchor
+  function repositionForAnchor() { repositionForAnchorRaw(); followPlate() }
+  var settleRaw = layoutUi.settle
+  function settle() { settleRaw(); followPlate() }
 
   // ————————————————————— 命中测试（静态命中区）—————————————————————
   // 图元定义与栅格化在 render/hit-test.js；这里只做屏幕坐标 → 归一化 → 镜像 → 查表。
@@ -165,14 +170,17 @@ export function startPet(mountContainer) {
   function start() {
     host.style.opacity = '1'
     window.__dshClosurePet.phase = 'running'
+    if (plateApi) plateApi.start()
   }
 
   function stop() {
     player.pause()
+    if (plateApi) plateApi.pause()
   }
 
   function resumeAnimation() {
     player.resume()
+    if (plateApi) plateApi.resume()
   }
 
   // 页面卸载 / 客户端插件销毁时调用：撤掉监听、定时器与 DOM，可重复调用。
@@ -185,6 +193,7 @@ export function startPet(mountContainer) {
     try { if (bubbleApi) bubbleApi.dispose() } catch (err) {}
     try { if (stickerApi) stickerApi.dispose() } catch (err) {}
     try { if (panelUi) panelUi.dispose() } catch (err) {}
+    try { if (plateApi) plateApi.dispose() } catch (err) {}
     try { director.dispose() } catch (err) {}
     try { player.dispose() } catch (err) {}
     try { window.removeEventListener('resize', onResize) } catch (err) {}
@@ -201,6 +210,12 @@ export function startPet(mountContainer) {
   function closePanel() { if (panelUi) panelUi.close() }
   function panelIsOpen() { return panelUi ? panelUi.isOpen() : false }
   function insidePanel(target) { return panelUi ? panelUi.contains(target) : false }
+
+  // ————————————————————— 硬件挂牌（HUD）—————————————————————
+  // 实现在 ui/plate.js；实例在组合阶段创建，这里先放薄委托。
+  var plateApi = null
+  function applyPlate() { if (plateApi) plateApi.applySettings() }
+  function followPlate() { if (plateApi) plateApi.follow() }
 
   // ————————————————————— 交互：点击 / 拖拽 / 右键 —————————————————————
   // 实现在 input/drag.js；监听在组合阶段注册。
@@ -228,6 +243,7 @@ export function startPet(mountContainer) {
     }
   }
   document.addEventListener('visibilitychange', onVisibility)
+
 
   function resetPosition() {
     pet.pos = defaultPos()
@@ -318,7 +334,7 @@ export function startPet(mountContainer) {
     settings: settings, saveSettings: saveSettings, resolveFlip: resolveFlip,
     layout: layout, repositionForAnchor: repositionForAnchor, applyOpacity: applyOpacity,
     hideBubble: hideBubble, refreshBubble: refreshBubble, audioEnsure: audioEnsure, loadSounds: loadSounds, playSound: playSound,
-    size: size, pet: pet, resetPosition: resetPosition,
+    size: size, pet: pet, resetPosition: resetPosition, applyPlate: applyPlate,
   })
   bubbleApi = createBubble({
     getState: function () { return stateApi ? stateApi.getState() : null }, pet: pet, size: size, settings: settings,
@@ -326,6 +342,7 @@ export function startPet(mountContainer) {
   stickerApi = createSticker({
     getState: function () { return stateApi ? stateApi.getState() : null }, pet: pet, size: size, settings: settings,
   })
+  plateApi = createPlate({ settings: settings, pet: pet, size: size })
   stateApi = createState({
     layers: layers, playOverlay: playOverlay, playSad: playSad, syncAnimation: syncAnimation,
     showBubble: showBubble, refreshBubble: refreshBubble, playSound: playSound,
@@ -366,7 +383,7 @@ export function startPet(mountContainer) {
         segments: function () { return [segmentRange(0), segmentRange(1)] },
         openPanel: openPanel,
         closePanel: closePanel,
-        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume } },
+        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume, plate: settings.plate } },
         get split() { return INTERACT_SPLIT },
         setSettings: function (patch) {
           if (patch) {
@@ -385,10 +402,12 @@ export function startPet(mountContainer) {
             if (patch.opacity) settings.opacity = Number(patch.opacity)
             if (typeof patch.sound === 'boolean') settings.sound = patch.sound
             if (patch.volume !== undefined) settings.volume = Number(patch.volume)
+            if (typeof patch.plate === 'boolean') settings.plate = patch.plate
           }
           saveSettings(true); layout(); repositionForAnchor(); resolveFlip(); applyOpacity()
           if (bubbleApi && bubbleApi.isShown()) refreshBubble()
           if (!settings.bubble) hideBubble()
+          applyPlate()
         },
         resetPosition: resetPosition,
         hitTest: hitTest,
@@ -416,6 +435,7 @@ export function startPet(mountContainer) {
             hitMask: { w: HIT_MASK_W, h: HIT_MASK_H, ready: !!hitMask, grow: HIT_GROW, forms: HIT_FORMS.length },
             settings: { mirror: settings.mirror, size: settings.size },
             clips: Object.keys(CLIPS).length,
+            plate: plateApi ? plateApi.debug() : null,
           }
         },
         dispose: dispose,

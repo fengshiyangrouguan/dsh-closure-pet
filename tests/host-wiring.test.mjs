@@ -67,6 +67,7 @@ test('apply() 注册事件与全部路由', async (t) => {
     'exact /dsh-closure/ping',
     'exact /dsh-closure/state',
     'exact /dsh-closure/config',
+    'exact /dsh-closure/hardware',
     'prefix /dsh-closure/assets',
   ])
 
@@ -100,6 +101,27 @@ test('apply() 注册事件与全部路由', async (t) => {
   const saved = JSON.parse(await fs.readFile(path.join(tmpHome, '.dshcl.json'), 'utf8'))
   assert.equal(saved.version, 1)
   assert.equal(saved.settings.size, 2)
+
+  // /hardware：读一次硬件，形状固定；没有 nvidia-smi 的机器也必须 200 + gpus: []
+  const hw = await callRoute(routes, '/dsh-closure/hardware', 'GET')
+  assert.equal(hw.statusCode, 200)
+  const hwBody = JSON.parse(hw.body)
+  assert.equal(hwBody.ok, true)
+  assert.equal(typeof hwBody.at, 'number')
+  assert.ok(hwBody.cpu === null || typeof hwBody.cpu === 'number')
+  assert.equal(typeof hwBody.mem, 'object')
+  assert.equal(typeof hwBody.mem.used, 'number')
+  assert.equal(typeof hwBody.mem.total, 'number')
+  assert.ok(hwBody.mem.percent === null || typeof hwBody.mem.percent === 'number')
+  assert.ok(Array.isArray(hwBody.gpus))
+  for (const gpu of hwBody.gpus) {
+    assert.equal(typeof gpu.index, 'number')
+    assert.ok(gpu.usage === null || typeof gpu.usage === 'number')
+  }
+
+  // /hardware 只认 GET
+  const hwPost = await callRoute(routes, '/dsh-closure/hardware', 'POST')
+  assert.equal(hwPost.statusCode, 405)
 
   // session/event：assistant/message 计费后 /state 能读到
   const peak = Date.parse('2026-11-19T02:00:00Z')

@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  SCHEMA_VERSION, URL_PREFIX, STATE_PATH, CONFIG_PATH,
+  SCHEMA_VERSION, URL_PREFIX, STATE_PATH, CONFIG_PATH, HARDWARE_PATH,
   SETTINGS_DEFAULTS, SIZE_MIN, SIZE_MAX, OPACITY_MIN, normalizeSettings,
 } from '../assets/src/shared/protocol.js'
 
@@ -11,19 +11,20 @@ test('协议版本与路径', () => {
   assert.equal(URL_PREFIX, '/dsh-closure')
   assert.equal(STATE_PATH, '/dsh-closure/state')
   assert.equal(CONFIG_PATH, '/dsh-closure/config')
+  assert.equal(HARDWARE_PATH, '/dsh-closure/hardware')
 })
 
 test('设置默认值', () => {
   assert.deepEqual({ ...SETTINGS_DEFAULTS }, {
-    mirror: 'auto', size: 1, bubble: true, bubbleScale: 100, bubbleTiers: true, snapStrength: 200, opacity: 1, sound: true, volume: 0.7,
+    mirror: 'auto', size: 1, bubble: true, bubbleScale: 100, bubbleTiers: true, snapStrength: 200, opacity: 1, sound: true, volume: 0.7, plate: false,
   })
   assert.ok(SIZE_MIN < SIZE_MAX)
   assert.ok(OPACITY_MIN >= 0 && OPACITY_MIN < 1)
 })
 
 test('normalizeSettings 接受合法字段', () => {
-  const out = normalizeSettings({ mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, snapStrength: 200, opacity: 0.8, sound: false, volume: 0.1 })
-  assert.deepEqual(out, { mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, snapStrength: 200, opacity: 0.8, sound: false, volume: 0.1 })
+  const out = normalizeSettings({ mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, snapStrength: 200, opacity: 0.8, sound: false, volume: 0.1, plate: true })
+  assert.deepEqual(out, { mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, snapStrength: 200, opacity: 0.8, sound: false, volume: 0.1, plate: true })
 })
 
 test('normalizeSettings 夹取越界值', () => {
