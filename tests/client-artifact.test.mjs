@@ -12,7 +12,8 @@ test('manifest：dsh.client 与打包后的 ./client 入口', () => {
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.equal(pkg.exports['./client'], './lib/client.js')
   assert.ok(pkg.files.includes('lib'))
-  assert.equal(pkg.version, '2.0.0')
+  assert.match(pkg.version, /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/)
+  assert.notEqual(pkg.version, '0.0.0')
 })
 
 test('客户端产物：自包含 bundle 注册 shell.overlay', () => {

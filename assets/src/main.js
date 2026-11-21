@@ -24,7 +24,7 @@
 
 import {
   PREFIX, CANVAS_W, FRAME, DRAG_THRESHOLD_SQ, SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX, SNAP_STRENGTH_MIN, SNAP_STRENGTH_MAX,
-  INTERACT_SPLIT, STARTUP_DELAY, STARTUP_GAP, log, warn,
+  INTERACT_SPLIT, STARTUP_DELAY, log, warn,
 } from './core/env.js'
 import { settings, saveSettings } from './core/settings.js'
 import { HIT_MASK_W, HIT_MASK_H, HIT_GROW, HIT_FORMS, buildHitMask, maskHit } from './render/hit-test.js'
@@ -297,17 +297,13 @@ export function startPet(mountContainer) {
     director.resetLocks()
     var opening = p.peak ? playSad : function (after) { return playOverlay('Special_A', after) }
     opening(function () {
+      // 开屏第一段结束后必须明确接续，不依赖下一次轮询或下一段覆盖动画。
+      startupHold = false
       if (!p.low) { syncAnimation(true); return }
-      // 空档 STARTUP_GAP：保持上一段姿势不动（syncAnimation 会被 startupHold 挡住），
-      // 避免轮询把基础层切上来，导致"难过→点头→再难过"的抖动。
-      startupHold = true
-      setTimeout(function () {
-        startupHold = false
-        if (layers.overlay) return // 空档里已经有别的覆盖动画了，不打断
-        playSad()
-        showBubble('博士！预算快见底了\n该批经费啦！')
-        playSound('fail')
-      }, STARTUP_GAP)
+      // 低余额开屏：第一段结束立即接第二段，不再停留 2 秒等定时器。
+      playSad()
+      showBubble('博士！预算快见底了\n该批经费啦！')
+      playSound('fail')
     })
     showBubble(p.peak ? '开始按原价收费了哦博士~' : '可露希尔大减价时间到~\n冲啊博士！')
   }

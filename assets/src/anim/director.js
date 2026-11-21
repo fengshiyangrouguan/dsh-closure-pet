@@ -26,8 +26,13 @@ export function createDirector(deps) {
   var thinkTimer = 0
   // 下一次换源要用的淡化时长；只有「交互动画结束」会写它，其余路径一律硬切。
   var pendingFade = null
+  // 用户在说话中点了交互：这一轮 Talk 已被显式打断，交互结束后回基态，
+  // 不再把同一轮 Talk 从头重播；等 work 变成别的状态/空闲后才解除。
+  var suppressedTalk = false
 
   function desiredName() {
+    // 被交互打断的那一轮输出不再恢复；基态优先，等 work 真正变化后再重新取 work。
+    if (suppressedTalk && layers.work === 'Talk') return layers.overlay || layers.base
     return layers.overlay || layers.work || layers.base
   }
 
@@ -131,6 +136,7 @@ export function createDirector(deps) {
   function syncAnimation(force) {
     if (!player) return
     if (deps.getStartupHold()) return // 开屏空档期：保持当前姿势
+    if (suppressedTalk && layers.work !== 'Talk') suppressedTalk = false
     var want = desiredName()
     // 难过入场播到一半：等它播完；若期间来了更高优先级的层，直接作废本次入场。
     if (pet.enteringSad) {
@@ -228,6 +234,8 @@ export function createDirector(deps) {
     // 用户点击是显式意图：允许打断 Talk
     talkLock = false
     pendingOverlay = null
+    // 说话期间被点击：这一轮 Talk 视为已被打断，交互结束回基态而不是从头重播。
+    if (layers.work === 'Talk') suppressedTalk = true
     stopThinking()
     pet.enteringSad = false
     var play = getPlaySound()
@@ -248,6 +256,11 @@ export function createDirector(deps) {
   }
 
   // 一次性覆盖动画（Happy / Sad_Begin / Special_A …）
+  var overlayTimer = 0
+  var overlaySeq = 0
+  // 覆盖动画的硬件/解码器偶发不派发 ended：用时长兜底，保证状态机一定继续。
+  var OVERLAY_WATCHDOG_MS = 8000
+
   function playOverlay(name, after) {
     if (!player) return null
     deps.setStartupHold(false)
@@ -260,17 +273,26 @@ export function createDirector(deps) {
     pet.afterOverlay = typeof after === 'function' ? after : null
     var fade = pendingFade === null ? 0 : pendingFade
     pendingFade = null
+    var seq = ++overlaySeq
+    function finish() {
+      if (seq !== overlaySeq || layers.overlay !== name) return
+      if (overlayTimer) { clearTimeout(overlayTimer); overlayTimer = 0 }
+      layers.overlay = null
+      var next = pet.afterOverlay
+      pet.afterOverlay = null
+      if (next) { next(); return }
+      syncAnimation(true)
+    }
     player.play(name, {
       fade: fade,
-      onEnded: function () {
-        if (layers.overlay !== name) return
-        layers.overlay = null
-        var next = pet.afterOverlay
-        pet.afterOverlay = null
-        if (next) { next(); return }
-        syncAnimation(true)
-      },
+      onEnded: finish,
     })
+    if (overlayTimer) clearTimeout(overlayTimer)
+    overlayTimer = setTimeout(function () {
+      overlayTimer = 0
+      log('overlay watchdog ->', name)
+      finish()
+    }, OVERLAY_WATCHDOG_MS)
     log('overlay ->', name)
     return true
   }
@@ -315,6 +337,9 @@ export function createDirector(deps) {
     endSegment: endSegment,
     isIdle: isIdle,
     resetLocks: resetLocks,
-    dispose: stopThinking,
+    dispose: function () {
+      stopThinking()
+      if (overlayTimer) { clearTimeout(overlayTimer); overlayTimer = 0 }
+    },
   }
 }

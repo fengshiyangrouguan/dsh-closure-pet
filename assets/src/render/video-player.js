@@ -133,8 +133,11 @@ export function createVideoPlayer(deps) {
     }
     if (currentName === name && !opts.restart) {
       if (typeof opts.onEnded === 'function') endedHandler = opts.onEnded
-      if (currentEl && currentEl.paused && !paused) {
-        currentEl.play().catch(function () {})
+      if (currentEl && !paused) {
+        // 同名动画已播完但还没换源（例如覆盖动画结束、开屏空档期）：
+        // 不能只 play()，要从头重启，否则不会再有 ended 回调。
+        if (currentEl.ended) currentEl.currentTime = 0
+        if (currentEl.paused) currentEl.play().catch(function () {})
       }
       return true
     }
