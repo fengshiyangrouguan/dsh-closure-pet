@@ -84,6 +84,7 @@ node --test "tests/*.test.mjs"   # 或 npm test
 - `tests/host-pure.test.mjs`：峰谷/节假日、计费、北京时间归日
 - `tests/frontend-pure.test.mjs`：常量、设置合并、静态命中区、片段表、音效/布局工厂
 - `tests/frontend-wiring.test.mjs`：DOM 桩下创建面板/气泡/贴画/导演/状态/拖拽，验证依赖注入与监听注册
+- `tests/state-machine.test.mjs`：状态机全量回归（base / work / overlay 的所有衔接）
 - `tests/client-artifact.test.mjs`：`lib/client.js` 是自包含 bundle，注册 `shell.overlay` 且不依赖注入回退
 
 调试接口挂在 `window.__dshClosurePet`：`play(name)`、`showBubble()`、`settings`、`layers`、`debug`、`startup`、`dispose()` 等。
@@ -108,6 +109,7 @@ node --test "tests/*.test.mjs"   # 或 npm test
 - **播放**：A/B 两个 `<video>` 交替；新片段加载就绪后才交换 `is-front`。只有交互动画结束回状态层做一次 320ms 交叉淡化，其余切换一律硬切。
 - **思考**：进入思考后的第一次必定播一遍完整的 `Special_B`；之后每隔 10 秒掷一次骰，50% 概率再播一遍，播完回待机。播放期间不掷骰、不重触发。
 - **输出**：Talk 强制播完一遍；输出未结束时从头再播，期间状态切换被挂起，播完再兑现。
+- **说话中点击交互**：这一轮 Talk 视为被显式打断，交互结束回基态（低余额先 Sad_Begin 再 Sad_Idle），不再从头重播；等 work 变成别的状态/空闲后才恢复。
 - **互动**：`Interact_A` 暂时停用，只播后半段 `Interact_B`，播完回状态层并做一次 320ms 淡化。
 - **难过基态**：任何状态回到 `Sad_Idle` 之前，都由导演统一先播一遍 `Sad_Begin`，不靠各事件分支自己补。
 

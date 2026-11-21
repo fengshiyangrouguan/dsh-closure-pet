@@ -26,8 +26,13 @@ export function createDirector(deps) {
   var thinkTimer = 0
   // 下一次换源要用的淡化时长；只有「交互动画结束」会写它，其余路径一律硬切。
   var pendingFade = null
+  // 用户在说话中点了交互：这一轮 Talk 已被显式打断，交互结束后回基态，
+  // 不再把同一轮 Talk 从头重播；等 work 变成别的状态/空闲后才解除。
+  var suppressedTalk = false
 
   function desiredName() {
+    // 被交互打断的那一轮输出不再恢复；基态优先，等 work 真正变化后再重新取 work。
+    if (suppressedTalk && layers.work === 'Talk') return layers.overlay || layers.base
     return layers.overlay || layers.work || layers.base
   }
 
@@ -131,6 +136,7 @@ export function createDirector(deps) {
   function syncAnimation(force) {
     if (!player) return
     if (deps.getStartupHold()) return // 开屏空档期：保持当前姿势
+    if (suppressedTalk && layers.work !== 'Talk') suppressedTalk = false
     var want = desiredName()
     // 难过入场播到一半：等它播完；若期间来了更高优先级的层，直接作废本次入场。
     if (pet.enteringSad) {
@@ -228,6 +234,8 @@ export function createDirector(deps) {
     // 用户点击是显式意图：允许打断 Talk
     talkLock = false
     pendingOverlay = null
+    // 说话期间被点击：这一轮 Talk 视为已被打断，交互结束回基态而不是从头重播。
+    if (layers.work === 'Talk') suppressedTalk = true
     stopThinking()
     pet.enteringSad = false
     var play = getPlaySound()
