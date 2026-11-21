@@ -3,25 +3,39 @@
 // 一块很薄的 HUD：CPU / 内存 / GPU 用量与温度，挂在桌宠头顶 8px。
 //   · 数据来自宿主 GET /dsh-closure/hardware（宿主侧单飞 + 2s 缓存）
 //   · 自己在 2s 节奏上轮询，页面隐藏 / 屏保亮板 / 开关关闭时停采样并隐藏
-//   · 纯 DOM，无 canvas：颜色走 --dsw-alias-*，字体继承宿主（皮肤换字体也跟着变）
+//   · 颜色按当前主题（浅色 / 深色）取两套 palette 之一，主题切换时当场重画
+//   · 纯 DOM，无 canvas；字体继承宿主（皮肤换字体也跟着变）
 //
 // 依赖注入：settings（settings.plate 是开关）、pet（pos/flipped）、size()。
 
 import { HARDWARE_PATH } from '../shared/protocol.js'
 import {
-  buildSegments, PLATE_MAX_ROW_WIDTH, PLATE_LINE_HEIGHT, PLATE_PADDING_Y, PLATE_PADDING_X,
+  buildSegments, normalizeScheme, pickPalette,
+  PLATE_MAX_ROW_WIDTH, PLATE_LINE_HEIGHT, PLATE_PADDING_Y, PLATE_PADDING_X,
   PLATE_GROUP_GAP, PLATE_SEGMENT_GAP, PLATE_DOT_SIZE, PLATE_FONT_SIZE,
 } from './plate-format.js'
 
-// 颜色优先跟随宿主主题变量，取不到时退回 dafeiyu 挂牌的配色
-var COLORS = {
-  ok: { text: 'var(--dsw-alias-label-primary, #F2F7FD)', dot: 'var(--dsw-alias-state-success-primary, #63C8FF)' },
-  warn: { text: 'var(--dsw-alias-state-warn-primary, #FFD07A)', dot: 'var(--dsw-alias-state-warn-primary, #FFC65C)' },
-  error: { text: 'var(--dsw-alias-state-error-primary, #FF9B9B)', dot: 'var(--dsw-alias-state-error-primary, #FF7A7A)' },
-  idle: { text: 'var(--dsw-alias-label-tertiary, #8A97A5)', dot: 'var(--dsw-alias-label-tertiary, #5C6875)' },
-}
-
 var POLL_MS = 2000
+
+/**
+ * 当前主题。
+ * DSH 的主题 = prefers-color-scheme，并在 <html style="color-scheme: light|dark"> 上落成实际值；
+ * 皮肤 / 其它插件也可能只改 media。三条都读，按「内联 → 计算值 → media」的顺序取第一个明确答案。
+ */
+function currentScheme() {
+  try {
+    var inline = document.documentElement.style && document.documentElement.style.colorScheme
+    if (inline) return normalizeScheme(inline)
+  } catch (err) {}
+  try {
+    var computed = window.getComputedStyle(document.documentElement).colorScheme
+    if (computed) return normalizeScheme(computed)
+  } catch (err) {}
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark'
+  } catch (err) {}
+  return 'light'
+}
 
 export function createPlate(deps) {
   var settings = deps.settings
@@ -38,6 +52,10 @@ export function createPlate(deps) {
   var lastSampleAt = 0
   var lastError = null
   var lastPos = null
+  var theme = currentScheme()
+  var palette = pickPalette(theme)
+  var mediaQuery = null
+  var attrObserver = null
 
   function createSeg() {
     var wrap = document.createElement('span')
@@ -48,10 +66,10 @@ export function createPlate(deps) {
     var dot = document.createElement('span')
     dot.style.cssText = [
       'display:inline-block', 'width:' + PLATE_DOT_SIZE + 'px', 'height:' + PLATE_DOT_SIZE + 'px',
-      'border-radius:50%', 'flex:0 0 auto', 'background:' + COLORS.idle.dot,
+      'border-radius:50%', 'flex:0 0 auto', 'background:' + palette.colors.idle.dot,
     ].join(';')
     var text = document.createElement('span')
-    text.style.cssText = 'color:' + COLORS.idle.text + ';white-space:nowrap'
+    text.style.cssText = 'color:' + palette.colors.idle.text + ';white-space:nowrap'
     wrap.appendChild(dot)
     wrap.appendChild(text)
     return { wrap: wrap, dot: dot, text: text }
@@ -62,6 +80,7 @@ export function createPlate(deps) {
     el = document.createElement('div')
     el.id = 'dsh-closure-pet-plate'
     el.setAttribute('data-cl-pet-plate', '')
+    el.setAttribute('data-cl-pet-plate-scheme', theme)
     el.setAttribute('aria-hidden', 'true')
     el.style.cssText = [
       'position:fixed', 'left:0', 'top:0', 'display:none',
@@ -72,16 +91,13 @@ export function createPlate(deps) {
       'max-width:' + PLATE_MAX_ROW_WIDTH + 'px',
       'padding:' + PLATE_PADDING_Y + 'px ' + PLATE_PADDING_X + 'px',
       'border-radius:8px',
-      'background:rgba(15,19,26,.84)',
-      'border:1px solid rgba(255,255,255,.13)',
-      'box-shadow:0 4px 14px rgba(0,0,0,.35)',
       'font-size:' + PLATE_FONT_SIZE + 'px',
       'line-height:' + PLATE_LINE_HEIGHT + 'px',
       // 字体族故意不写：继承宿主 / 皮肤设置
       'font-variant-numeric:tabular-nums',
       'letter-spacing:.02em',
       'backdrop-filter:blur(6px)',
-      'transition:opacity .18s ease',
+      'transition:opacity .18s ease, background-color .18s ease, border-color .18s ease',
       'opacity:0',
     ].join(';')
     rowEl = document.createElement('div')
@@ -91,7 +107,27 @@ export function createPlate(deps) {
     ].join(';')
     el.appendChild(rowEl)
     document.body.appendChild(el)
+    applyPalette()
     render(null)
+  }
+
+  /** 把当前 palette 落到牌子上（底色 / 描边 / 阴影 + 属性标记，便于排查与断言）。 */
+  function applyPalette() {
+    if (!el) return
+    el.setAttribute('data-cl-pet-plate-scheme', theme)
+    el.style.background = palette.surface
+    el.style.border = '1px solid ' + palette.border
+    el.style.boxShadow = palette.shadow
+  }
+
+  /** 主题变了就换一套 palette 并重画已有段（不重新采样）。 */
+  function syncTheme() {
+    var next = currentScheme()
+    if (next === theme) return
+    theme = next
+    palette = pickPalette(theme)
+    applyPalette()
+    render(lastSample)
   }
 
   function render(sample) {
@@ -109,7 +145,7 @@ export function createPlate(deps) {
       }
       // 段可以后出现（比如显卡第一帧还没采到）：每次都按顺序重排，避免挤到末尾
       if (rowEl.childNodes[i] !== node.wrap) rowEl.insertBefore(node.wrap, rowEl.childNodes[i] || null)
-      var color = COLORS[seg.level] || COLORS.idle
+      var color = palette.colors[seg.level] || palette.colors.idle
       node.dot.style.background = color.dot
       node.text.style.color = color.text
       node.text.textContent = seg.text
@@ -153,6 +189,7 @@ export function createPlate(deps) {
 
   function show() {
     ensure()
+    syncTheme()
     if (el.style.display !== 'block') {
       el.style.display = 'block'
       lastPos = null
@@ -176,6 +213,8 @@ export function createPlate(deps) {
   }
 
   async function poll() {
+    if (!shouldPoll()) { sync(); return }
+    syncTheme()
     if (!shouldPoll()) { sync(); return }
     if (inflight) return
     inflight = true
@@ -210,8 +249,46 @@ export function createPlate(deps) {
     }
   }
 
+  function onMediaChange() {
+    syncTheme()
+  }
+
+  function onAttrChange() {
+    syncTheme()
+  }
+
+  function watchTheme() {
+    if (mediaQuery) return
+    try {
+      if (window.matchMedia) {
+        mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+        if (mediaQuery.addEventListener) mediaQuery.addEventListener('change', onMediaChange)
+        else if (mediaQuery.addListener) mediaQuery.addListener(onMediaChange)
+      }
+    } catch (err) { mediaQuery = null }
+    try {
+      // DSH 自己把主题写进 <html style="color-scheme: …">，属性一变就重画
+      attrObserver = new MutationObserver(onAttrChange)
+      attrObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class', 'data-theme', 'data-ds-theme-source'] })
+    } catch (err) { attrObserver = null }
+  }
+
+  function unwatchTheme() {
+    try {
+      if (mediaQuery) {
+        if (mediaQuery.removeEventListener) mediaQuery.removeEventListener('change', onMediaChange)
+        else if (mediaQuery.removeListener) mediaQuery.removeListener(onMediaChange)
+      }
+    } catch (err) {}
+    mediaQuery = null
+    try { if (attrObserver) attrObserver.disconnect() } catch (err) {}
+    attrObserver = null
+  }
+
   function start() {
     running = true
+    watchTheme()
+    syncTheme()
     sync()
   }
 
@@ -223,6 +300,8 @@ export function createPlate(deps) {
 
   function resume() {
     running = true
+    watchTheme()
+    syncTheme()
     sync()
   }
 
@@ -242,6 +321,7 @@ export function createPlate(deps) {
 
   function dispose() {
     stopTimer()
+    unwatchTheme()
     running = false
     if (el && el.parentNode) el.parentNode.removeChild(el)
     el = null
@@ -256,6 +336,8 @@ export function createPlate(deps) {
       active: !!(el && el.style.display === 'block'),
       enabled: settings.plate === true,
       running: running,
+      theme: theme,
+      schemeAttr: el ? el.getAttribute('data-cl-pet-plate-scheme') : null,
       lastSampleAt: lastSampleAt,
       lastError: lastError,
       sample: lastSample,
@@ -267,5 +349,6 @@ export function createPlate(deps) {
     follow: follow, applySettings: applySettings,
     dispose: dispose, debug: debug,
     getSample: function () { return lastSample },
+    getTheme: function () { return theme },
   }
 }
