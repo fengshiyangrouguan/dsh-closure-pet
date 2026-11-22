@@ -83,14 +83,6 @@ export class ErrorNotice {
   }
 }
 
-export class ToolFailNotice {
-  build(ctx) {
-    const failName = ctx && ctx.lastFailName ? '：' + ctx.lastFailName : ''
-    const text = pick(pool(ctx, 'toolFail', DEFAULT_DIALOGUES.toolFail), ctx.lastText)
-    return simple(String(text || '工具调用失败') + failName, 'fail')
-  }
-}
-
 export class InteractNotice {
   build(ctx) {
     const cur = current(ctx)

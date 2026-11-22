@@ -28,7 +28,7 @@ export const IDLE_CHATTER_DEFAULT = 45000
 export const DIALOGUE_KEYS = [
   'idle', 'sadIdle', 'thinkIdle',
   'lowBalance', 'credited', 'peakTime', 'valleyTime',
-  'turnInterrupted', 'error', 'toolFail', 'toolSuccess', 'turnEnd', 'interact',
+  'turnInterrupted', 'error', 'toolSuccess', 'turnEnd', 'interact',
 ]
 
 export function normalizeDialogues(raw) {

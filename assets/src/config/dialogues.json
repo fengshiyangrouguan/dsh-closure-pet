@@ -29,9 +29,6 @@
   "error": [
     "啧，这次出错了博士……"
   ],
-  "toolFail": [
-    "工具调用失败了，博士。"
-  ],
   "toolSuccess": [],
   "turnEnd": [],
   "interact": [

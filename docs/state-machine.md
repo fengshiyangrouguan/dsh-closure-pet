@@ -503,7 +503,8 @@ STARTUP_DUE -> fire(peak ? 'peak_time' : 'valley_time')
   - `dialogues.thinkIdle`：Think_Idle 时的闲聊；
   - 触发入口是 `idleChatter` one-shot：绑定 `talk` 动画、优先级 0、不排队；`IdleChatterNotice` 按当前 base 选对应池并随机一条；
 - **事件对话池，按事件分列表**：
-  - `dialogues.credited`、`dialogues.peakTime`、`dialogues.valleyTime`、`dialogues.lowBalance`、`dialogues.turnInterrupted`、`dialogues.toolFail`、`dialogues.toolSuccess`、`dialogues.turnEnd`；
+  - `dialogues.credited`、`dialogues.peakTime`、`dialogues.valleyTime`、`dialogues.lowBalance`、`dialogues.turnInterrupted`、`dialogues.toolSuccess`、`dialogues.turnEnd`；
+  - 工具失败文本由 DSH 自己输出，宠物只做难过反应，不重复弹气泡；
   - 每个事件自己的 `notice` 类决定怎么取、怎么拼、怎么随机；
 - 默认文案来自 `assets/src/config/dialogues.json`，设置页直接读取并允许修改；
 - 每个列表支持 `+` 添加多条；触发时均匀随机一条，避免连续重复；

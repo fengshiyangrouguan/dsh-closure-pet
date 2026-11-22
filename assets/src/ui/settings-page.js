@@ -16,7 +16,6 @@ const EVENT_GROUPS = [
   ['lowBalance', '余额不足'],
   ['turnInterrupted', '对话中断'],
   ['error', '出错'],
-  ['toolFail', '工具失败'],
   ['toolSuccess', '工具成功'],
   ['turnEnd', '本轮结束'],
   ['interact', '点击交互'],
