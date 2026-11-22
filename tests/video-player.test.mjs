@@ -55,7 +55,7 @@ test('同名覆盖动画 ended 后再次 play 会从头重启', async () => {
   const player = createVideoPlayer({ stage, baseUrl: '/assets/video/', log() {} })
   let firstEnded = 0
   let secondEnded = 0
-  player.play('Special_A', { onEnded: () => { firstEnded++ } })
+  player.play('Celebrate', { onEnded: () => { firstEnded++ } })
   await new Promise((resolve) => setTimeout(resolve, 0))
 
   const video = player.video()
@@ -66,7 +66,7 @@ test('同名覆盖动画 ended 后再次 play 会从头重启', async () => {
   video.paused = true
   video.currentTime = 2
 
-  player.play('Special_A', { onEnded: () => { secondEnded++ } })
+  player.play('Celebrate', { onEnded: () => { secondEnded++ } })
   assert.equal(video.currentTime, 0, '同名的 ended 视频必须回到第 0 帧')
   assert.equal(video.paused, false, '必须重新播放')
 

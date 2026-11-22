@@ -34,11 +34,6 @@ export const CLIPS = {
   Talk: { src: 'talk.webm', duration: 5.0 },
   Interact_1: { src: 'interact_1.webm', duration: 2.233 },
   Interact_2: { src: 'interact_2.webm', duration: 2.133 },
-  // 旧片段保留给旧导演/旧测试；3.0 运行时不再使用。
-  Special_A: { src: 'special_a.webm', duration: 2.0 },
-  Special_B: { src: 'special_b.webm', duration: 2.667 },
-  Interact_A: { src: 'interact_a.webm', duration: 2.1 },
-  Interact_B: { src: 'interact_b.webm', duration: 3.833 },
 }
 
 export const ANIMATION_NAMES = [
