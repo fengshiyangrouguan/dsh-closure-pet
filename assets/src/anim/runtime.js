@@ -74,16 +74,19 @@ export function createRuntime(deps) {
   }
 
   const idleChatterMs = deps.idleChatterMs || 0
+  const chatterChance = deps.idleChatterChance === undefined ? 1 : deps.idleChatterChance
   let chatterTimer = 0
-  function startChatter(ms) {
+  let chatterRate = chatterChance
+  function startChatter(ms, chance) {
     if (chatterTimer) { clearInterval(chatterTimer); chatterTimer = 0 }
+    chatterRate = chance === undefined ? chatterRate : chance
     if (ms > 0) {
       chatterTimer = setInterval(() => {
-        dispatch({ type: 'IDLE_CHATTER_DUE' })
+        if (Math.random() <= chatterRate) dispatch({ type: 'IDLE_CHATTER_DUE' })
       }, ms)
     }
   }
-  startChatter(idleChatterMs)
+  startChatter(idleChatterMs, chatterChance)
 
   return {
     machine,
@@ -94,7 +97,7 @@ export function createRuntime(deps) {
     click: () => { if (deps.ensureAudio) deps.ensureAudio(); return dispatch({ type: 'CLICK' }) },
     startupDue: (peak) => dispatch({ type: 'STARTUP_DUE', peak: !!peak }),
     idleChatterDue: () => dispatch({ type: 'IDLE_CHATTER_DUE' }),
-    setIdleChatterMs: (ms) => startChatter(Number(ms) || 0),
+    setIdleChatterConfig: (minutes, chance) => startChatter(Number(minutes) * 60000, Number(chance)),
     dispatch,
     // 旧 debug/UI 的只读投影
     get layers() {

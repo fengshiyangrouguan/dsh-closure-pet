@@ -24,7 +24,8 @@ export const SNAP_STRENGTH_MAX = 200
 
 // 设置页低频项
 export const LOW_THRESHOLD_DEFAULT = 10
-export const IDLE_CHATTER_DEFAULT = 45000
+export const IDLE_CHATTER_MINUTES_DEFAULT = 1
+export const IDLE_CHATTER_CHANCE_DEFAULT = 1
 export const DIALOGUE_KEYS = [
   'idle', 'sadIdle', 'thinkIdle',
   'lowBalance', 'credited', 'peakTime', 'valleyTime',
@@ -61,7 +62,8 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   sound: true,
   volume: 0.7,
   lowThreshold: LOW_THRESHOLD_DEFAULT,
-  idleChatterMs: IDLE_CHATTER_DEFAULT,
+  idleChatterMinutes: IDLE_CHATTER_MINUTES_DEFAULT,
+  idleChatterChance: IDLE_CHATTER_CHANCE_DEFAULT,
   dialogues: {},
 })
 
@@ -92,8 +94,10 @@ export function normalizeSettings(raw, base) {
   if (Number.isFinite(volume)) out.volume = Math.min(1, Math.max(0, volume))
   const lowThreshold = Number(raw.lowThreshold)
   if (Number.isFinite(lowThreshold)) out.lowThreshold = Math.min(1000000, Math.max(0, lowThreshold))
-  const idleChatterMs = Number(raw.idleChatterMs)
-  if (Number.isFinite(idleChatterMs)) out.idleChatterMs = Math.min(600000, Math.max(0, idleChatterMs))
+  const idleChatterMinutes = Number(raw.idleChatterMinutes)
+  if (Number.isFinite(idleChatterMinutes)) out.idleChatterMinutes = Math.min(1440, Math.max(0, idleChatterMinutes))
+  const idleChatterChance = Number(raw.idleChatterChance)
+  if (Number.isFinite(idleChatterChance)) out.idleChatterChance = Math.min(1, Math.max(0, idleChatterChance))
   if (raw.dialogues && typeof raw.dialogues === 'object') {
     out.dialogues = { ...normalizeDialogues(out.dialogues), ...normalizeDialogues(raw.dialogues) }
   }

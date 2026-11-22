@@ -117,7 +117,9 @@ export function createState(deps) {
         if (typeof s.sound === 'boolean') settings.sound = s.sound
         if (isFinite(Number(s.volume))) settings.volume = Math.min(1, Math.max(0, Number(s.volume)))
         if (isFinite(Number(s.lowThreshold))) settings.lowThreshold = Math.min(1000000, Math.max(0, Number(s.lowThreshold)))
-        if (isFinite(Number(s.idleChatterMs))) settings.idleChatterMs = Math.min(600000, Math.max(0, Number(s.idleChatterMs)))
+        if (isFinite(Number(s.idleChatterMinutes))) settings.idleChatterMinutes = Math.min(1440, Math.max(0, Number(s.idleChatterMinutes)))
+        else if (isFinite(Number(s.idleChatterMs))) settings.idleChatterMinutes = Math.min(1440, Math.max(0, Number(s.idleChatterMs) / 60000))
+        if (isFinite(Number(s.idleChatterChance))) settings.idleChatterChance = Math.min(1, Math.max(0, Number(s.idleChatterChance)))
         if (s.dialogues && typeof s.dialogues === 'object') settings.dialogues = s.dialogues
         layout()
         repositionForAnchor()

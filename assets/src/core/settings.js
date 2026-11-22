@@ -29,7 +29,8 @@ export function saveSettings(immediate) {
       opacity: settings.opacity,
       sound: settings.sound, volume: settings.volume,
       lowThreshold: settings.lowThreshold,
-      idleChatterMs: settings.idleChatterMs,
+      idleChatterMinutes: settings.idleChatterMinutes,
+      idleChatterChance: settings.idleChatterChance,
       dialogues: settings.dialogues || {},
     }))
   } catch (err) {}

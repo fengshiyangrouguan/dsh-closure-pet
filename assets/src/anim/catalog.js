@@ -8,6 +8,7 @@ import {
   LowBalanceNotice,
   InterruptedNotice,
   ErrorNotice,
+  ToolFailNotice,
   InteractNotice,
   IdleChatterNotice,
 } from './notices.js'
@@ -58,8 +59,8 @@ export const EVENTS = {
     videos: [{ clip: 'Sad_Begin', from: 0.4, to: 1.8 }],
     priority: 70,
     queue: true,
-    // 工具失败文本由 DSH 自己输出；宠物只做难过反应，不重复弹气泡。
-    notice: null,
+    // 固定格式“工具调用失败：工具名”，不开放文案配置。
+    notice: new ToolFailNotice(),
   },
 
   'turn-interrupted': {

@@ -101,8 +101,13 @@ export function makeSettingsSection(React) {
         min: 0, step: 1, onChange: (v) => patch({ lowThreshold: v }), hint: '元',
       }),
       h(Field, {
-        label: '闲时对话间隔', value: settings.idleChatterMs === undefined ? 45000 : settings.idleChatterMs,
-        min: 0, step: 5000, onChange: (v) => patch({ idleChatterMs: v }), hint: '毫秒；0 = 关闭',
+        label: '闲时对话间隔', value: settings.idleChatterMinutes === undefined ? 1 : settings.idleChatterMinutes,
+        min: 0, step: 1, onChange: (v) => patch({ idleChatterMinutes: v }), hint: '分钟；0 = 关闭',
+      }),
+      h(Field, {
+        label: '闲时对话触发概率',
+        value: Math.round((settings.idleChatterChance === undefined ? 1 : settings.idleChatterChance) * 100),
+        min: 0, step: 5, onChange: (v) => patch({ idleChatterChance: Math.min(1, Math.max(0, v / 100)) }), hint: '%',
       }),
 
       h('h3', { style: { margin: '26px 0 4px', fontSize: 16 } }, '闲时对话池（按状态分开）'),

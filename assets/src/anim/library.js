@@ -23,7 +23,7 @@ export const CLIPS = {
   Think_Exit: { src: 'think_exit.webm', duration: 1.567 },
   Celebrate: { src: 'celebrate.webm', duration: 2.0 },
   Talk: { src: 'talk.webm', duration: 5.0 },
-  Interact_1: { src: 'interact_1.webm', duration: 2.467 },
+  Interact_1: { src: 'interact_1.webm', duration: 2.433 },
   Interact_2: { src: 'interact_2.webm', duration: 2.167 },
 }
 

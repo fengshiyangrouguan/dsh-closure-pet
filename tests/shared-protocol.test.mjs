@@ -16,7 +16,7 @@ test('协议版本与路径', () => {
 test('设置默认值', () => {
   assert.deepEqual({ ...SETTINGS_DEFAULTS }, {
     mirror: 'auto', size: 1, bubble: true, bubbleScale: 100, bubbleTiers: true, snapStrength: 200, opacity: 1, sound: true, volume: 0.7,
-    lowThreshold: 10, idleChatterMs: 45000, dialogues: {},
+    lowThreshold: 10, idleChatterMinutes: 1, idleChatterChance: 1, dialogues: {},
   })
   assert.ok(SIZE_MIN < SIZE_MAX)
   assert.ok(OPACITY_MIN >= 0 && OPACITY_MIN < 1)
@@ -25,11 +25,11 @@ test('设置默认值', () => {
 test('normalizeSettings 接受合法字段', () => {
   const out = normalizeSettings({
     mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, snapStrength: 200, opacity: 0.8, sound: false, volume: 0.1,
-    lowThreshold: 25, idleChatterMs: 60000, dialogues: { idle: ['你好'] },
+    lowThreshold: 25, idleChatterMinutes: 2, idleChatterChance: 0.5, dialogues: { idle: ['你好'] },
   })
   assert.deepEqual(out, {
     mirror: 'always', size: 1.5, bubble: false, bubbleScale: 150, bubbleTiers: false, snapStrength: 200, opacity: 0.8, sound: false, volume: 0.1,
-    lowThreshold: 25, idleChatterMs: 60000, dialogues: { idle: ['你好'] },
+    lowThreshold: 25, idleChatterMinutes: 2, idleChatterChance: 0.5, dialogues: { idle: ['你好'] },
   })
 })
 
