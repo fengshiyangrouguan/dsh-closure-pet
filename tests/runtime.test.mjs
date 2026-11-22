@@ -6,6 +6,7 @@ import { createRuntime } from '../assets/src/anim/runtime.js'
 function harness() {
   const plays = []
   const notices = []
+  const dialogs = []
   const player = {
     play(name, opts) {
       plays.push({ name, opts })
@@ -16,15 +17,17 @@ function harness() {
     player,
     log: () => {},
     showNotice: (spec, event) => notices.push({ spec, event }),
+    showDialog: (text) => dialogs.push(text),
     getDialogues: () => ({
       credited: ['经费到账'],
       lowBalance: ['余额见底'],
       idle: ['今天也辛苦了'],
       sadIdle: ['别难过'],
       thinkIdle: ['在想事情'],
+      interact: ['今天也辛苦了'],
     }),
   })
-  return { rt, plays, notices, player }
+  return { rt, plays, notices, dialogs, player }
 }
 
 function lastPlay(plays) {
@@ -69,4 +72,13 @@ test('idleChatter 按当前 base 取对应池', () => {
   assert.equal(lastPlay(h.plays).name, 'Talk')
   assert.equal(h.notices.length, 1)
   assert.equal(h.notices[0].spec.text, '别难过')
+})
+
+test('interact 用完整信息气泡 + 对话，而不是独立 segments', () => {
+  const h = harness()
+  h.rt.fire('interact')
+  assert.match(lastPlay(h.plays).name, /^Interact_[12]$/)
+  assert.equal(h.dialogs.length, 1)
+  assert.equal(h.dialogs[0], '今天也辛苦了')
+  assert.equal(h.notices.length, 0)
 })

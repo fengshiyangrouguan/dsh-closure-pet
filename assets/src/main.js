@@ -156,8 +156,11 @@ export function startPet(mountContainer) {
     showNotice: function (spec) {
       if (spec && spec.segments && spec.segments.length) showBubble(spec.segments, 4200)
       else if (spec && spec.text) showBubble(spec.text, 4200)
-      if (spec && spec.sound) playSound(spec.sound)
     },
+    showDialog: function (text) {
+      if (bubbleApi) bubbleApi.dialog(text, 4200)
+    },
+    playSound: function (name) { playSound(name) },
   })
 
   function start() {

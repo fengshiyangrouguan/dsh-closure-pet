@@ -53,7 +53,9 @@ export function createRuntime(deps) {
         }
         if (spec) {
           if (spec.text) lastText = spec.text
-          if (deps.showNotice) deps.showNotice(spec, effect.event)
+          if (spec.sound && deps.playSound) deps.playSound(spec.sound)
+          if (spec.dialog && deps.showDialog) deps.showDialog(spec.dialog, 4200)
+          else if (deps.showNotice) deps.showNotice(spec, effect.event)
         }
       } else if (effect.type === 'schedule') {
         const timer = setTimeout(() => {

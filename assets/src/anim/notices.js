@@ -85,16 +85,9 @@ export class ErrorNotice {
 
 export class InteractNotice {
   build(ctx) {
-    const cur = current(ctx)
-    const balance = cur.balance && cur.balance.total
-    const period = cur.period && cur.period.name
     const body = pick(pool(ctx, 'interact', DEFAULT_DIALOGUES.interact), ctx.lastText)
-    const segments = [
-      { text: body, tier: 'body' },
-    ]
-    if (isFinite(Number(balance))) segments.push({ text: '余额 ' + money(balance), tier: 'number' })
-    if (period) segments.push({ text: period + '价', tier: 'tag' })
-    return { segments, sound: 'click' }
+    // 交给气泡的“对话 + 完整信息”混合模式：对话第一行，后面接余额/花费/峰谷。
+    return body ? { dialog: body, sound: 'click' } : null
   }
 }
 

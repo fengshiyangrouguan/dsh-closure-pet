@@ -58,6 +58,10 @@ export function createBubble(deps) {
 
   function hideBubble() {
     bubbleShown = false
+    bubbleDialogText = ''
+    bubbleDialogUntil = 0
+    bubbleEventRows = null
+    bubbleEventText = ''
     if (bubbleEl) {
       try { bubbleEl.getAnimations().forEach(function (a) { a.cancel() }) } catch (err) {}
       bubbleEl.style.opacity = '0'
@@ -67,6 +71,8 @@ export function createBubble(deps) {
   var bubbleEventText = ''
   var bubbleEventRows = null
   var bubbleEventUntil = 0
+  var bubbleDialogText = ''
+  var bubbleDialogUntil = 0
   var bubbleMode = 'info'   // 'event'（事件反馈，过期即收）| 'info'（点击查看，常驻 5.2s）
 
   function ensureFont() {
@@ -365,6 +371,18 @@ export function createBubble(deps) {
       }
       return [{ text: bubbleEventText, size: BUBBLE_SIZE }]
     }
+    // 点击交互：复用完整信息气泡，对话放第一行，金额前加“余额”
+    if (bubbleDialogText && Date.now() < bubbleDialogUntil) {
+      var info = infoLines()
+      if (info.length && info[0].bold && info[0].size >= BUBBLE_SIZE_MID) {
+        info[0] = { text: '余额 ' + info[0].text, size: info[0].size, bold: info[0].bold }
+      }
+      return [{ text: bubbleDialogText, size: BUBBLE_SIZE, bold: true }].concat(info)
+    }
+    return infoLines()
+  }
+
+  function infoLines() {
     var rows = []
     var s = getState()
     var b = s && s.balance
@@ -492,6 +510,8 @@ export function createBubble(deps) {
     if (!settings.bubble) return
     ensureFont()
     var wasVisible = bubbleShown
+    bubbleDialogText = ''
+    bubbleDialogUntil = 0
     if (Array.isArray(eventText)) {
       bubbleEventRows = eventText
       bubbleEventText = ''
@@ -540,6 +560,43 @@ export function createBubble(deps) {
     }
   }
 
+  function showDialog(text, eventMs) {
+    if (!settings.bubble || !text) return
+    ensureFont()
+    var wasVisible = bubbleShown
+    bubbleEventRows = null
+    bubbleEventText = ''
+    bubbleDialogText = String(text)
+    bubbleDialogUntil = Date.now() + (eventMs || 4200)
+    bubbleMode = 'dialog'
+    refreshBubble()
+    bubbleShown = true
+    if (!wasVisible) popBubbleIn()
+    else bubbleEl.style.opacity = '1'
+    clearTimeout(bubbleHideTimer)
+    var hideIn = Math.max(1200, bubbleDialogUntil - Date.now())
+    bubbleHideTimer = setTimeout(function () {
+      bubbleShown = false
+      popBubbleOut()
+      if (bubbleTickTimer) { clearInterval(bubbleTickTimer); bubbleTickTimer = 0 }
+    }, hideIn)
+    if (!bubbleTickTimer) {
+      bubbleTickTimer = setInterval(function () {
+        if (!bubbleShown) {
+          clearInterval(bubbleTickTimer); bubbleTickTimer = 0
+          return
+        }
+        if (bubbleMode === 'dialog' && Date.now() > bubbleDialogUntil) {
+          bubbleShown = false
+          popBubbleOut()
+          clearInterval(bubbleTickTimer); bubbleTickTimer = 0
+          return
+        }
+        refreshBubble()
+      }, 1000)
+    }
+  }
+
   function dispose() {
     hideBubble()
     if (bubbleFollowRaf) { cancelAnimationFrame(bubbleFollowRaf); bubbleFollowRaf = 0 }
@@ -552,5 +609,5 @@ export function createBubble(deps) {
     bubbleSvg = null
   }
 
-  return { show: showBubble, refresh: refreshBubble, follow: followBubble, hide: hideBubble, dispose: dispose, isShown: function () { return bubbleShown } }
+  return { show: showBubble, dialog: showDialog, refresh: refreshBubble, follow: followBubble, hide: hideBubble, dispose: dispose, isShown: function () { return bubbleShown } }
 }

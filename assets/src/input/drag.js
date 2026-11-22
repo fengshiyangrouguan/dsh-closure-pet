@@ -166,7 +166,8 @@ export function createDrag(deps) {
     if (wasDrag) { settle(); refreshBubble() }
     else if (!pet.segment) {
       playSegment()
-      showBubble() // 点击顺带把气泡叫出来
+      // 点击的反馈由 interact 事件的 notice 负责；这里不能再 showBubble()，
+      // 否则会立刻把交互对话覆盖成余额/花费信息气泡。
       showValleySticker() // 谷价时再弹一下 −50% 贴画
     }
   }
