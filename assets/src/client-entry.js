@@ -4,6 +4,7 @@
 // 真正 UI 在 main.js，打包进同一个 bundle，不再从宿主路由动态 import。
 
 import { startPet } from './main.js'
+import { makeSettingsSection } from './ui/settings-page.js'
 
 export function makeFactory() {
   return function factory(require) {
@@ -38,6 +39,8 @@ export function makeFactory() {
       })
     }
 
+    const SettingsSection = makeSettingsSection(React)
+
     return {
       inject: ['slots'],
       apply(ctx) {
@@ -47,6 +50,14 @@ export function makeFactory() {
             id: 'dsh-closure-pet',
             order: 100,
           }, PetLayer)
+        })
+        ctx.slots.inject('settings.section', function () {
+          return ctx.slots.register({
+            name: 'settings.section',
+            id: 'dsh-closure-pet',
+            order: 50,
+            label: '可露希尔桌宠',
+          }, SettingsSection)
         })
       },
     }

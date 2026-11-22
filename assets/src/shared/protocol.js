@@ -22,6 +22,31 @@ export const BUBBLE_SCALE_BASE = 100 // 100% = 气泡排版的基准尺寸，缩
 export const SNAP_STRENGTH_MIN = 0
 export const SNAP_STRENGTH_MAX = 200
 
+// 设置页低频项
+export const LOW_THRESHOLD_DEFAULT = 10
+export const IDLE_CHATTER_DEFAULT = 45000
+export const DIALOGUE_KEYS = [
+  'idle', 'sadIdle', 'thinkIdle',
+  'lowBalance', 'credited', 'peakTime', 'valleyTime',
+  'turnInterrupted', 'error', 'toolFail', 'toolSuccess', 'turnEnd', 'interact',
+]
+
+export function normalizeDialogues(raw) {
+  const out = {}
+  if (!raw || typeof raw !== 'object') return out
+  for (const key of DIALOGUE_KEYS) {
+    const list = raw[key]
+    if (!Array.isArray(list)) continue
+    const rows = list
+      .map((item) => String(item == null ? '' : item).trim())
+      .filter(Boolean)
+      .slice(0, 40)
+      .map((item) => item.slice(0, 200))
+    if (rows.length) out[key] = rows
+  }
+  return out
+}
+
 export const SETTINGS_DEFAULTS = Object.freeze({
   mirror: 'auto',
   size: 1,
@@ -35,6 +60,9 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   opacity: 1,
   sound: true,
   volume: 0.7,
+  lowThreshold: LOW_THRESHOLD_DEFAULT,
+  idleChatterMs: IDLE_CHATTER_DEFAULT,
+  dialogues: {},
 })
 
 /**
@@ -62,5 +90,12 @@ export function normalizeSettings(raw, base) {
   if (typeof raw.sound === 'boolean') out.sound = raw.sound
   const volume = Number(raw.volume)
   if (Number.isFinite(volume)) out.volume = Math.min(1, Math.max(0, volume))
+  const lowThreshold = Number(raw.lowThreshold)
+  if (Number.isFinite(lowThreshold)) out.lowThreshold = Math.min(1000000, Math.max(0, lowThreshold))
+  const idleChatterMs = Number(raw.idleChatterMs)
+  if (Number.isFinite(idleChatterMs)) out.idleChatterMs = Math.min(600000, Math.max(0, idleChatterMs))
+  if (raw.dialogues && typeof raw.dialogues === 'object') {
+    out.dialogues = { ...normalizeDialogues(out.dialogues), ...normalizeDialogues(raw.dialogues) }
+  }
   return out
 }

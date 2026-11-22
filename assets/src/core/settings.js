@@ -28,6 +28,9 @@ export function saveSettings(immediate) {
       snapStrength: settings.snapStrength,
       opacity: settings.opacity,
       sound: settings.sound, volume: settings.volume,
+      lowThreshold: settings.lowThreshold,
+      idleChatterMs: settings.idleChatterMs,
+      dialogues: settings.dialogues || {},
     }))
   } catch (err) {}
   // 同时写回宿主（$DSH_HOME/.dshcl.json），换浏览器/清缓存也能恢复

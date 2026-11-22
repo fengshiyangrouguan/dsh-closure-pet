@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const clientSrc = fs.readFileSync(path.join(root, 'lib/client.js'), 'utf8')
 
-test('manifest：dsh.client 与打包后的 ./client 入口', () => {
+test('manifest: dsh.client, ./client and version', () => {
   assert.equal(pkg.dsh.client.platform, 'web')
   assert.equal(pkg.exports['./client'], './lib/client.js')
   assert.ok(pkg.files.includes('lib'))
@@ -16,7 +16,7 @@ test('manifest：dsh.client 与打包后的 ./client 入口', () => {
   assert.notEqual(pkg.version, '0.0.0')
 })
 
-test('客户端产物：自包含 bundle 注册 shell.overlay', () => {
+test('客户端产物：注册 shell.overlay 与 settings.section', () => {
   let def = null
   const fakeWindow = { __ModuleLoader__: { load(d) { def = d } } }
   new Function('window', clientSrc)(fakeWindow)
@@ -26,6 +26,7 @@ test('客户端产物：自包含 bundle 注册 shell.overlay', () => {
   const fakeReact = {
     createElement: (type, props, children) => ({ type, props, children }),
     useRef: (v) => ({ current: v }),
+    useState: (v) => [typeof v === 'function' ? v() : v, () => {}],
     useEffect: () => {},
   }
   const plugin = def.factory((name) => {
@@ -34,20 +35,24 @@ test('客户端产物：自包含 bundle 注册 shell.overlay', () => {
   })
   assert.deepEqual(plugin.inject, ['slots'])
 
-  let injectedKey = null
-  let registered = null
+  const injected = []
+  const registrations = []
   const ctx = {
     slots: {
-      inject(key, cb) { injectedKey = key; cb() },
-      register(options, component) { registered = { options, component } },
+      inject(key, cb) { injected.push(key); cb() },
+      register(options, component) { registrations.push({ options, component }) },
     },
   }
   plugin.apply(ctx)
-  assert.equal(injectedKey, 'shell.overlay')
-  assert.ok(registered)
-  assert.equal(registered.options.name, 'shell.overlay')
-  assert.equal(registered.options.id, 'dsh-closure-pet')
-  assert.equal(typeof registered.component, 'function')
+  assert.ok(injected.includes('shell.overlay'))
+  assert.ok(injected.includes('settings.section'))
+  const overlay = registrations.find((r) => r.options.name === 'shell.overlay')
+  const section = registrations.find((r) => r.options.name === 'settings.section')
+  assert.ok(overlay)
+  assert.ok(section)
+  assert.equal(overlay.options.id, 'dsh-closure-pet')
+  assert.equal(section.options.id, 'dsh-closure-pet')
+  assert.equal(typeof section.component, 'function')
 })
 
 test('不再保留 index 注入回退', () => {

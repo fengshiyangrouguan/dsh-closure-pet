@@ -116,6 +116,9 @@ export function createState(deps) {
         if (isFinite(Number(s.opacity))) settings.opacity = Math.min(1, Math.max(0.3, Number(s.opacity)))
         if (typeof s.sound === 'boolean') settings.sound = s.sound
         if (isFinite(Number(s.volume))) settings.volume = Math.min(1, Math.max(0, Number(s.volume)))
+        if (isFinite(Number(s.lowThreshold))) settings.lowThreshold = Math.min(1000000, Math.max(0, Number(s.lowThreshold)))
+        if (isFinite(Number(s.idleChatterMs))) settings.idleChatterMs = Math.min(600000, Math.max(0, Number(s.idleChatterMs)))
+        if (s.dialogues && typeof s.dialogues === 'object') settings.dialogues = s.dialogues
         layout()
         repositionForAnchor()
         resolveFlip()

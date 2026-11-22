@@ -147,7 +147,7 @@ export function startPet(mountContainer) {
   var runtime = createRuntime({
     player: player,
     log: log,
-    idleChatterMs: 45000,
+    idleChatterMs: settings.idleChatterMs,
     ensureAudio: function () { if (audioEnsure) audioEnsure() },
     getDialogues: function () { return Object.assign({}, DEFAULT_DIALOGUES, settings.dialogues || {}) },    getTypography: function () { return { tiers: settings.bubbleTiers !== false } },
     showNotice: function (spec) {
@@ -343,7 +343,7 @@ export function startPet(mountContainer) {
         segments: function () { return [] },
         openPanel: openPanel,
         closePanel: closePanel,
-        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume } },
+        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume, lowThreshold: settings.lowThreshold, idleChatterMs: settings.idleChatterMs, dialogues: settings.dialogues || {} } },
         get split() { return INTERACT_SPLIT },
         setSettings: function (patch) {
           if (patch) {
@@ -362,6 +362,9 @@ export function startPet(mountContainer) {
             if (patch.opacity) settings.opacity = Number(patch.opacity)
             if (typeof patch.sound === 'boolean') settings.sound = patch.sound
             if (patch.volume !== undefined) settings.volume = Number(patch.volume)
+            if (patch.lowThreshold !== undefined) settings.lowThreshold = Math.max(0, Number(patch.lowThreshold))
+            if (patch.idleChatterMs !== undefined) { settings.idleChatterMs = Math.max(0, Number(patch.idleChatterMs)); runtime.setIdleChatterMs(settings.idleChatterMs) }
+            if (patch.dialogues && typeof patch.dialogues === 'object') settings.dialogues = patch.dialogues
           }
           saveSettings(true); layout(); repositionForAnchor(); resolveFlip(); applyOpacity()
           if (bubbleApi && bubbleApi.isShown()) refreshBubble()
