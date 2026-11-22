@@ -48,7 +48,7 @@ export function makeSettingsSection(React) {
           style: { border: '1px solid var(--dsh-border, #bbb)', background: 'transparent', color: 'inherit', borderRadius: 6, cursor: 'pointer', padding: '2px 8px' },
         }, '+'),
       ),
-      list.length === 0 ? h('div', { style: { fontSize: 12, opacity: 0.6 } }, '空，使用默认文案') : null,
+      list.length === 0 ? h('div', { style: { fontSize: 12, opacity: 0.6 } }, '空，不显示通知') : null,
       list.map((text, i) => h('div', { key: i, style: { display: 'flex', gap: 6, marginBottom: 4 } },
         h('input', {
           value: text, placeholder: '输入一条对话',
@@ -101,16 +101,16 @@ export function makeSettingsSection(React) {
         min: 0, step: 1, onChange: (v) => patch({ lowThreshold: v }), hint: '元',
       }),
       h(Field, {
-        label: '闲时对话间隔', value: settings.idleChatterMinutes === undefined ? 1 : settings.idleChatterMinutes,
+        label: '闲时对话间隔', value: settings.idleChatterMinutes === undefined ? 10 : settings.idleChatterMinutes,
         min: 0, step: 1, onChange: (v) => patch({ idleChatterMinutes: v }), hint: '分钟；0 = 关闭',
       }),
       h(Field, {
         label: '闲时对话触发概率',
-        value: Math.round((settings.idleChatterChance === undefined ? 1 : settings.idleChatterChance) * 100),
+        value: Math.round((settings.idleChatterChance === undefined ? 0.5 : settings.idleChatterChance) * 100),
         min: 0, step: 5, onChange: (v) => patch({ idleChatterChance: Math.min(1, Math.max(0, v / 100)) }), hint: '%',
       }),
 
-      h('h3', { style: { margin: '26px 0 4px', fontSize: 16 } }, '闲时对话池（按状态分开）'),
+      h('h3', { style: { margin: '26px 0 4px', fontSize: 16 } }, '闲时对话池'),
       STATE_GROUPS.map(([key, title]) =>
         h(ListEditor, {
           key: key, title: title,
@@ -118,7 +118,7 @@ export function makeSettingsSection(React) {
           onChange: (v) => patchDialogue(key, v),
         })),
 
-      h('h3', { style: { margin: '26px 0 4px', fontSize: 16 } }, '事件对话池（按事件分开）'),
+      h('h3', { style: { margin: '26px 0 4px', fontSize: 16 } }, '特殊事件对话池'),
       EVENT_GROUPS.map(([key, title]) =>
         h(ListEditor, {
           key: key, title: title,
