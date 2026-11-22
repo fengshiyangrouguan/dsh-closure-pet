@@ -65,6 +65,7 @@ export function createBubble(deps) {
     if (bubbleTickTimer) { clearInterval(bubbleTickTimer); bubbleTickTimer = 0 }
   }
   var bubbleEventText = ''
+  var bubbleEventRows = null
   var bubbleEventUntil = 0
   var bubbleMode = 'info'   // 'event'（事件反馈，过期即收）| 'info'（点击查看，常驻 5.2s）
 
@@ -348,7 +349,20 @@ export function createBubble(deps) {
   // 气泡内容：金额行最大，其余为小字辅助行（分级排版由 bubbleTiers 开关控制）
   function bubbleLines() {
     // 事件反馈期间**只显示反馈内容**，不掺余额/花费/峰谷
-    if (bubbleEventText && Date.now() < bubbleEventUntil) {
+    if ((bubbleEventRows || bubbleEventText) && Date.now() < bubbleEventUntil) {
+      if (bubbleEventRows) {
+        return bubbleEventRows.map(function (r) {
+          var tier = r.tier
+          var size = r.size
+          if (!size) size = tier === 'title' ? BUBBLE_SIZE + 6 : tier === 'number' ? BUBBLE_SIZE_BIG : tier === 'tag' ? BUBBLE_SIZE - 4 : BUBBLE_SIZE
+          return {
+            text: r.text,
+            size: size,
+            color: r.color || (tier === 'tag' ? '#6b7280' : ''),
+            bold: r.bold === undefined ? (tier === 'title' || tier === 'number') : !!r.bold,
+          }
+        })
+      }
       return [{ text: bubbleEventText, size: BUBBLE_SIZE }]
     }
     var rows = []
@@ -478,11 +492,18 @@ export function createBubble(deps) {
     if (!settings.bubble) return
     ensureFont()
     var wasVisible = bubbleShown
-    if (eventText) {
+    if (Array.isArray(eventText)) {
+      bubbleEventRows = eventText
+      bubbleEventText = ''
+      bubbleEventUntil = Date.now() + (eventMs || 3600)
+      bubbleMode = 'event'
+    } else if (eventText) {
       bubbleEventText = eventText
+      bubbleEventRows = null
       bubbleEventUntil = Date.now() + (eventMs || 3600)
       bubbleMode = 'event'
     } else {
+      bubbleEventRows = null
       bubbleMode = 'info'
     }
     refreshBubble()

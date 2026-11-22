@@ -35,7 +35,8 @@ import { createPanel } from './ui/panel.js'
 import { createBubble } from './ui/bubble.js'
 import { createSticker } from './ui/sticker.js'
 import { createDrag } from './input/drag.js'
-import { createDirector } from './anim/director.js'
+import { createRuntime } from './anim/runtime.js'
+import { DEFAULT_DIALOGUES } from './anim/notices.js'
 import { createVideoPlayer } from './render/video-player.js'
 import { createState } from './io/state.js'
 
@@ -141,26 +142,20 @@ export function startPet(mountContainer) {
     return maskHit(hitMask, nx, ny)
   }
 
-  // ————————————————————— 播放（分层）—————————————————————
-  // 状态机在 anim/director.js；这里创建实例并保持调用点不变。
-  var director = createDirector({
-    pet: pet, player: player, log: log,
-    // audio 别名在下面音效分节才赋值，用 getter 惰性取（否则 playSegment 会拿到 undefined）
-    getAudioEnsure: function () { return audioEnsure },
-    getPlaySound: function () { return playSound },
-    getStartupHold: function () { return startupHold },
-    setStartupHold: function (v) { startupHold = v },
+  // ————————————————————— 动画（3.0 注册式状态机）—————————————————————
+  // 状态机只产出 play/notice/schedule effect；这里把它们接到视频、气泡与音效。
+  var runtime = createRuntime({
+    player: player,
+    log: log,
+    idleChatterMs: 45000,
+    ensureAudio: function () { if (audioEnsure) audioEnsure() },
+    getDialogues: function () { return Object.assign({}, DEFAULT_DIALOGUES, settings.dialogues || {}) },    getTypography: function () { return { tiers: settings.bubbleTiers !== false } },
+    showNotice: function (spec) {
+      if (spec && spec.segments && spec.segments.length) showBubble(spec.segments, 4200)
+      else if (spec && spec.text) showBubble(spec.text, 4200)
+      if (spec && spec.sound) playSound(spec.sound)
+    },
   })
-  var layers = director.layers
-  var desiredName = director.desiredName
-  var playLoop = director.playLoop
-  var startAnimation = director.startAnimation
-  var syncAnimation = director.syncAnimation
-  var segmentRange = director.segmentRange
-  var playSegment = director.playSegment
-  var playOverlay = director.playOverlay
-  var playSad = director.playSad
-  var endSegment = director.endSegment
 
   function start() {
     host.style.opacity = '1'
@@ -185,7 +180,7 @@ export function startPet(mountContainer) {
     try { if (bubbleApi) bubbleApi.dispose() } catch (err) {}
     try { if (stickerApi) stickerApi.dispose() } catch (err) {}
     try { if (panelUi) panelUi.dispose() } catch (err) {}
-    try { director.dispose() } catch (err) {}
+    try { runtime.dispose() } catch (err) {}
     try { player.dispose() } catch (err) {}
     try { window.removeEventListener('resize', onResize) } catch (err) {}
     try { document.removeEventListener('visibilitychange', onVisibility) } catch (err) {}
@@ -274,7 +269,6 @@ export function startPet(mountContainer) {
   // 都先演一遍开屏（峰谷 → 可选余额），演完再回到原本的工作层/基础层。
   var startupTimer = 0
   var startupPending = null
-  var startupHold = false // 开屏两段之间的空档：暂停状态驱动的动画切换
 
   function scheduleStartup(peak, low) {
     startupPending = { peak: !!peak, low: !!low }
@@ -293,19 +287,8 @@ export function startPet(mountContainer) {
     var p = startupPending
     startupPending = null
     if (!p || !player) return
-    // 强制插播：清掉 Talk 锁与挂起的覆盖动画，立刻把开屏演出来
-    director.resetLocks()
-    var opening = p.peak ? playSad : function (after) { return playOverlay('Special_A', after) }
-    opening(function () {
-      // 开屏第一段结束后必须明确接续，不依赖下一次轮询或下一段覆盖动画。
-      startupHold = false
-      if (!p.low) { syncAnimation(true); return }
-      // 低余额开屏：第一段结束立即接第二段，不再停留 2 秒等定时器。
-      playSad()
-      showBubble('博士！预算快见底了\n该批经费啦！')
-      playSound('fail')
-    })
-    showBubble(p.peak ? '开始按原价收费了哦博士~' : '可露希尔大减价时间到~\n冲啊博士！')
+    // 开屏只是启动时检定峰谷，触发普通 peak_time / valley_time；不是独立事件层。
+    runtime.startupDue(p.peak)
   }
 
   // ————————————————————— 组合：创建 UI 实例 —————————————————————
@@ -323,7 +306,7 @@ export function startPet(mountContainer) {
     getState: function () { return stateApi ? stateApi.getState() : null }, pet: pet, size: size, settings: settings,
   })
   stateApi = createState({
-    layers: layers, playOverlay: playOverlay, playSad: playSad, syncAnimation: syncAnimation,
+    runtime: runtime,
     showBubble: showBubble, refreshBubble: refreshBubble, playSound: playSound,
     scheduleStartup: scheduleStartup,
     settings: settings, saveSettings: saveSettings,
@@ -333,7 +316,7 @@ export function startPet(mountContainer) {
   })
   dragApi = createDrag({
     hitTest: hitTest, pet: pet, host: host, clampPos: clampPos, applyPosition: applyPosition,
-    settle: settle, refreshBubble: refreshBubble, followBubble: followBubble, playSegment: playSegment,
+    settle: settle, refreshBubble: refreshBubble, followBubble: followBubble, playSegment: function () { runtime.click() },
     showBubble: showBubble, showValleySticker: showValleySticker,
     openPanel: openPanel, closePanel: closePanel, panelIsOpen: panelIsOpen, insidePanel: insidePanel,
   })
@@ -344,7 +327,7 @@ export function startPet(mountContainer) {
       hitMask = buildHitMask()
       placeFromStorage()
       applyOpacity()
-      playLoop('Idle', true)
+      runtime.setConditions({ low: false, work: 'idle' })
       start()
       startPolling()
       loadHostConfig()
@@ -355,11 +338,9 @@ export function startPet(mountContainer) {
         phase: 'running',
         animations: ANIMATION_NAMES,
         play: function (name, loop) {
-          layers.overlay = null   // 手动播放视为最高优先级，先清掉覆盖层
-          pet.segment = null
-          loop ? playLoop(name, true) : playSegment2(name)
+          runtime.fire(name)
         },
-        segments: function () { return [segmentRange(0), segmentRange(1)] },
+        segments: function () { return [] },
         openPanel: openPanel,
         closePanel: closePanel,
         get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume } },
@@ -392,15 +373,15 @@ export function startPet(mountContainer) {
         showBubble: showBubble,
         showValleySticker: showValleySticker,
         hideBubble: hideBubble,
-        get layers() { return { base: layers.base, work: layers.work, overlay: layers.overlay } },
+        get layers() { return runtime.layers },
         get sounds() { return audio.getState() },
         playSound: playSound,
         runStartup: runStartup,
         cancelStartup: cancelStartup,
-        get startup() { return { pending: !!startupPending, delay: STARTUP_DELAY, gap: STARTUP_GAP } },
+        get startup() { return { pending: !!startupPending, delay: STARTUP_DELAY } },
         get trackTime() { return player.currentTime() },
         get animation() { return player.current() },
-        get segmentInfo() { return pet.segment ? { to: pet.segment.to, index: pet.segment.index } : null },
+        get segmentInfo() { return null },
         get position() { return pet.pos && { x: pet.pos.x, y: pet.pos.y, flipped: pet.flipped } },
         get debug() {
           return {
@@ -425,9 +406,8 @@ export function startPet(mountContainer) {
   boot()
   return dispose
 
-  // 调试用：按名字播一段单次动画（Interact 走分段逻辑）
+  // 调试用：按事件名触发
   function playSegment2(name) {
-    if (name === 'Interact') return playSegment()
-    return playOverlay(name)
+    runtime.fire(name)
   }
 }

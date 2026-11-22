@@ -23,8 +23,11 @@ assets/src/                   前端源码（打包进 lib/client.js，不直接
   shared/protocol.js          前后端共享协议（版本 / 路径 / 设置归一化）
   render/hit-test.js          静态命中区（图元 → 128×108 掩码）
   render/video-player.js      透明视频播放：A/B 双缓冲 + 交叉淡化
-  anim/library.js             片段表（路径 / 时长 / 循环 / 节奏参数）
-  anim/director.js            动画导演（分层状态机 / 分段 / Talk 锁 / 思考掷骰）
+  anim/library.js             片段表（路径 / 时长 / 循环）
+  anim/catalog.js             基础状态 + 事件注册表
+  anim/machine.js             注册式状态机（纯 reduce/resolve）
+  anim/runtime.js             effect 执行（player / 通知 / 定时器）
+  anim/notices.js             通知类 + 默认对话池
   audio.js                    音效（工厂）
   ui/layout.js                位置 / 吸附 / 翻转（工厂）
   ui/panel.js                 设置面板（工厂）
@@ -32,7 +35,7 @@ assets/src/                   前端源码（打包进 lib/client.js，不直接
   ui/sticker.js               谷价贴画（工厂）
   input/drag.js               点击 / 拖拽 / 右键（工厂）
   io/state.js                 宿主状态轮询 + applyState 事件分发
-assets/video/                 9 段透明动画（888×748，WebM VP9-alpha）
+assets/video/                 透明动画（888×748，WebM VP9-alpha；新片段 + 旧片段备份）
 assets/fonts/                 Ark Pixel 12px + OFL
 assets/audio/                 click / fail / coin / turnfail（Opus 56k）
 tests/                        node --test 用例（宿主纯函数 / 前端模块 / DOM 桩接线）
@@ -101,7 +104,7 @@ node --test "tests/*.test.mjs"   # 或 npm test
 
 ## 动画状态机
 
-目标模型是 v3.1（注册式基座，重构中；当前 2.0.1 仍是旧分层实现，完成后替换）：
+目标模型是 v3.1，3.0.0 已接入核心状态机（设置页与部分数值调优仍待补）：
 
 - 基础状态注册：`idle` / `sad` / `think`，每个状态自带 loop、enter 槽、exit 槽；以后加新状态只注册，不改核心分支。
 - 三种基础状态之间的进入/退出全部由 `Sad_Begin` / `Think_Begin` 完成：正放进入，倒放退出；Sad ↔ Think 经 Idle 中转。

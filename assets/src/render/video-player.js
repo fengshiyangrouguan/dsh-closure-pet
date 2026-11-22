@@ -96,9 +96,19 @@ export function createVideoPlayer(deps) {
     stage.style.setProperty('--dsh-fade', (ms === undefined ? CLIP_FADE_MS : ms) + 'ms')
   }
 
-  function markReady(back, name, clip, token, onEnded) {
+  var rangeHandler = null
+  var rangeEnd = null
+
+  function clearRange() {
+    if (currentEl && rangeHandler) currentEl.removeEventListener('timeupdate', rangeHandler)
+    rangeHandler = null
+    rangeEnd = null
+  }
+
+  function markReady(back, name, clip, token, onEnded, opts) {
     if (token !== gen) return
     var old = videos[front]
+    clearRange()
     back.classList.add('is-front')
     if (old && old !== back) {
       old.classList.remove('is-front')
@@ -109,16 +119,32 @@ export function createVideoPlayer(deps) {
     currentName = name
     currentEl = back
     endedHandler = typeof onEnded === 'function' ? onEnded : null
+    var ended = function () {
+      var cb = endedHandler
+      if (cb) cb(name)
+    }
     back.onended = clip.loop
       ? function () {
           // 循环段正常不会 ended；真收到就从头续播，避免停在末帧。
           try { back.currentTime = 0; back.play() } catch (err) {}
         }
-      : function () {
-          var cb = endedHandler
-          if (cb) cb(name)
-        }
+      : ended
     paused = false
+    back.playbackRate = opts && opts.speed ? opts.speed : 1
+    var range = opts && opts.range
+    if (range && range.from !== undefined && range.to !== undefined) {
+      rangeEnd = Number(range.to)
+      back.currentTime = Number(range.from) || 0
+      rangeHandler = function () {
+        if (rangeEnd === null) return
+        if (back.currentTime >= rangeEnd - 0.01) {
+          clearRange()
+          back.pause()
+          ended()
+        }
+      }
+      back.addEventListener('timeupdate', rangeHandler)
+    }
     back.play().catch(function (err) {
       log('视频播放被拒绝', name, err && err.message)
     })
@@ -153,7 +179,7 @@ export function createVideoPlayer(deps) {
       var onReady = function () {
         back.removeEventListener('loadeddata', onReady)
         if (token !== gen) return
-        markReady(back, name, clip, token, opts.onEnded)
+        markReady(back, name, clip, token, opts.onEnded, opts)
       }
       back.addEventListener('loadeddata', onReady)
       back.src = src
@@ -202,6 +228,7 @@ export function createVideoPlayer(deps) {
   }
 
   function dispose() {
+    clearRange()
     stop()
     for (var key in cache) {
       try { URL.revokeObjectURL(cache[key]) } catch (err) {}

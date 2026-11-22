@@ -110,43 +110,47 @@ test('导演工厂：层、空闲判断、锁清理', () => {
   assert.equal(typeof director.playOverlay, 'function')
 })
 
-test('状态工厂：轮询事件映射与开屏只调度一次', () => {
+test('状态工厂：只把 /state 翻译成 conditions/事件，开屏只调度一次', () => {
   let startupCalls = 0
-  const layers = { base: 'Idle', work: null, overlay: null }
+  const conditions = []
+  const fires = []
+  const runtime = {
+    setSnapshot: noop,
+    setConditions: (c) => conditions.push(c),
+    fire: (name) => fires.push(name),
+  }
   const state = createState({
-    layers, playOverlay: noop, playSad: noop, syncAnimation: noop, showBubble: noop, refreshBubble: noop,
-    playSound: noop, scheduleStartup: () => { startupCalls++ }, settings, saveSettings: noop,
+    runtime, showBubble: noop, refreshBubble: noop,
+    scheduleStartup: () => { startupCalls++ }, settings, saveSettings: noop,
     layout: noop, repositionForAnchor: noop, resolveFlip: noop, applyOpacity: noop,
     isBubbleShown: () => false,
   })
   assert.equal(state.getState(), null)
-  state.applyState(null) // 非法输入不应抛错
+  state.applyState(null)
   state.applyState({
     work: { mode: 'thinking' }, balance: { ok: true, low: true }, period: 'peak', periodSeq: 0,
     tools: { ok: 0, fail: 0 }, errors: { count: 0 }, topUpSeq: 0, turnEnd: { seq: 0 },
   })
-  assert.equal(layers.work, 'Special_B')
-  assert.equal(layers.base, 'Sad_Idle')
+  assert.deepEqual(conditions[0], { low: true, work: 'thinking' })
   assert.equal(startupCalls, 1)
-  assert.notEqual(state.getState(), null)
   state.applyState({
     work: { mode: 'idle' }, balance: { ok: true, low: true }, period: 'peak', periodSeq: 0,
     tools: { ok: 0, fail: 0 }, errors: { count: 0 }, topUpSeq: 0, turnEnd: { seq: 0 },
   })
-  assert.equal(layers.work, null)
+  assert.deepEqual(conditions[1], { low: true, work: 'idle' })
   assert.equal(startupCalls, 1)
 })
 
-test('状态工厂：难过事件统一走 playSad，不再散落 Sad_Begin', () => {
-  const sadCalls = []
-  const overlays = []
-  const layers = { base: 'Idle', work: null, overlay: null }
+test('状态工厂：错误/周期/到账只触发事实事件，不直接播动画', () => {
+  const fires = []
+  const runtime = {
+    setSnapshot: noop,
+    setConditions: noop,
+    fire: (name) => fires.push(name),
+  }
   const state = createState({
-    layers,
-    playOverlay: (name) => overlays.push(name),
-    playSad: () => sadCalls.push('sad'),
-    syncAnimation: noop, showBubble: noop, refreshBubble: noop,
-    playSound: noop, scheduleStartup: noop, settings, saveSettings: noop,
+    runtime, showBubble: noop, refreshBubble: noop,
+    scheduleStartup: noop, settings, saveSettings: noop,
     layout: noop, repositionForAnchor: noop, resolveFlip: noop, applyOpacity: noop,
     isBubbleShown: () => false,
   })
@@ -157,8 +161,9 @@ test('状态工厂：难过事件统一走 playSad，不再散落 Sad_Begin', ()
   }
   state.applyState(base)
   state.applyState({ ...base, errors: { count: 1, message: 'boom' } })
-  assert.equal(sadCalls.length, 1)
-  assert.equal(overlays.includes('Sad_Begin'), false)
+  assert.deepEqual(fires, ['error'])
+  state.applyState({ ...base, errors: { count: 1 }, period: 'peak', periodSeq: 1 })
+  assert.deepEqual(fires, ['error', 'peak_time'])
 })
 
 test('拖拽工厂：注册 8 个全局监听并暴露状态', () => {

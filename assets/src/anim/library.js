@@ -24,16 +24,24 @@ export const INTERACT_ACTIONS = ['Interact_B']
 export const CLIPS = {
   Idle: { src: 'idle.webm', duration: 1.467, loop: true },
   Sad_Idle: { src: 'sad_idle.webm', duration: 2.133, loop: true },
+  Think_Idle: { src: 'think_idle.webm', duration: 2.133, loop: true },
   Happy: { src: 'happy.webm', duration: 2.833 },
   Sad_Begin: { src: 'sad_begin.webm', duration: 2.567 },
+  Sad_Exit: { src: 'sad_exit.webm', duration: 2.567 },
+  Think_Begin: { src: 'think_begin.webm', duration: 1.567 },
+  Think_Exit: { src: 'think_exit.webm', duration: 1.567 },
+  Celebrate: { src: 'celebrate.webm', duration: 2.0 },
+  Talk: { src: 'talk.webm', duration: 5.0 },
+  Interact_1: { src: 'interact_1.webm', duration: 2.233 },
+  Interact_2: { src: 'interact_2.webm', duration: 2.133 },
+  // 旧片段保留给旧导演/旧测试；3.0 运行时不再使用。
   Special_A: { src: 'special_a.webm', duration: 2.0 },
   Special_B: { src: 'special_b.webm', duration: 2.667 },
-  Talk: { src: 'talk.webm', duration: 5.0 },
   Interact_A: { src: 'interact_a.webm', duration: 2.1 },
   Interact_B: { src: 'interact_b.webm', duration: 3.833 },
 }
 
-// 可被调试接口 / 文档直接列出的动画名（Interact 的两段在内部合并展示）。
 export const ANIMATION_NAMES = [
-  'Idle', 'Sad_Idle', 'Happy', 'Sad_Begin', 'Special_A', 'Special_B', 'Talk', 'Interact',
+  'Idle', 'Sad_Idle', 'Think_Idle', 'Happy', 'Sad_Begin', 'Think_Begin',
+  'Celebrate', 'Talk', 'Interact_1', 'Interact_2',
 ]
