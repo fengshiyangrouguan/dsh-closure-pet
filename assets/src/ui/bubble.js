@@ -371,13 +371,13 @@ export function createBubble(deps) {
       }
       return [{ text: bubbleEventText, size: BUBBLE_SIZE }]
     }
-    // 点击交互：复用完整信息气泡，对话放第一行，金额前加“余额”
+    // 点击交互：复用完整信息气泡，对话放最后一行、常规字重，金额前加“余额”
     if (bubbleDialogText && Date.now() < bubbleDialogUntil) {
       var info = infoLines()
       if (info.length && info[0].bold && info[0].size >= BUBBLE_SIZE_MID) {
         info[0] = { text: '余额 ' + info[0].text, size: info[0].size, bold: info[0].bold }
       }
-      return [{ text: bubbleDialogText, size: BUBBLE_SIZE, bold: true }].concat(info)
+      return info.concat([{ text: bubbleDialogText, size: BUBBLE_SIZE, bold: false }])
     }
     return infoLines()
   }
