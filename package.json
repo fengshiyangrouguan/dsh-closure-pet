@@ -16,6 +16,7 @@
     "locale",
     "lib",
     "assets",
+    "docs",
     "tests",
     "icon.png",
     "cordis.patch.yml",

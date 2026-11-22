@@ -36,6 +36,7 @@ assets/video/                 9 段透明动画（888×748，WebM VP9-alpha）
 assets/fonts/                 Ark Pixel 12px + OFL
 assets/audio/                 click / fail / coin / turnfail（Opus 56k）
 tests/                        node --test 用例（宿主纯函数 / 前端模块 / DOM 桩接线）
+docs/state-machine.md         状态机 v3 设计稿（三基础 loop + Begin 转场 + one-shot 事件）
 cordis.patch.yml              bundle 入口
 ```
 
@@ -100,33 +101,36 @@ node --test "tests/*.test.mjs"   # 或 npm test
 
 ## 动画状态机
 
-| 层 | 用途 |
-|---|---|
-| `overlay` | 一次性动画：Happy / Sad_Begin / Special_A / Interact |
-| `work` | 进行中：Special_B（思考）/ Talk（输出，强制播完） |
-| `base` | 常态：Idle / Sad_Idle（余额偏低） |
+目标模型是 v3.1（注册式基座，重构中；当前 2.0.1 仍是旧分层实现，完成后替换）：
 
-- **片段表**：`anim/library.js` 里每段动画对应一个透明视频（`assets/video/*.webm`），循环与时长都写在同一处。
-- **播放**：A/B 两个 `<video>` 交替；新片段加载就绪后才交换 `is-front`。只有交互动画结束回状态层做一次 320ms 交叉淡化，其余切换一律硬切。
-- **思考**：进入思考后的第一次必定播一遍完整的 `Special_B`；之后每隔 10 秒掷一次骰，50% 概率再播一遍，播完回待机。播放期间不掷骰、不重触发。
-- **输出**：Talk 强制播完一遍；输出未结束时从头再播，期间状态切换被挂起，播完再兑现。
-- **说话中点击交互**：这一轮 Talk 视为被显式打断，交互结束回基态（低余额先 Sad_Begin 再 Sad_Idle），不再从头重播；等 work 变成别的状态/空闲后才恢复。
-- **互动**：`Interact_A` 暂时停用，只播后半段 `Interact_B`，播完回状态层并做一次 320ms 淡化。
-- **难过基态**：任何状态回到 `Sad_Idle` 之前，都由导演统一先播一遍 `Sad_Begin`，不靠各事件分支自己补。
+- 基础状态注册：`idle` / `sad` / `think`，每个状态自带 loop、enter 槽、exit 槽；以后加新状态只注册，不改核心分支。
+- 三种基础状态之间的进入/退出全部由 `Sad_Begin` / `Think_Begin` 完成：正放进入，倒放退出；Sad ↔ Think 经 Idle 中转。
+- 需要两段转场的跨状态由底层自动倍速；离开 Idle 前要求 Idle 完整播完一轮。
+- 事件注册：事件名描述事实，视频可以一个或多个、均匀随机。例如 `credited → celebrate`、`valley_time → happy`、`peak_time → sad_begin（一段难过表情）`、`turn-interrupted → sad_begin`、`interact → interact_1 / interact_2`。
+- 每个事件带一个 `notice` 类实例：可以在 `build(ctx)` 里查询余额/峰谷、拼动态富文本、按状态选对话池；通知不再单独注册。
+- `lowBalance` 也是普通 one-shot：20 优先级、排队、暂时没有动画（`textOnly`），`LowBalanceNotice` 只发通知、不改任何动画状态。
+- 闲时对话 `idleChatter` 也是 one-shot：绑定 `talk`、0 优先级、不排队；`IdleChatterNotice` 按当前 base 从 Idle / Sad_Idle / Think_Idle 的独立池里随机。
+- 事件进入一律交叉淡化；同优先级排队，低优先级事件可按注册配置是否排队；事件结束回 base 时播目标状态的 enter，没有 enter 就跳过。
+- 思考不再掷骰、不再播完整 `Special_B`：`Special_B` 已拆成 `think_Begin` + `think_Idle`，原段仅作素材备份。
+- 不再有 `talkLock`、`startupHold`、`enteringSad`、`afterOverlay` 这些跨函数标志；只有一个 active 片段、一个 `seq`、一个纯 `resolve()`。
+
+完整设计、注册表、优先级、设置页与测试矩阵见 [docs/state-machine.md](docs/state-machine.md)。
 
 触发源：`agent/assistant-stream`、`tools/result`、`agent/error`、`agent/status`、`session/event`（`assistant/message` 计费、`turn/end` 结束）、账户余额（60s 轮询）。
 
 ## 开屏演出
 
-首次拿到 `/state` 后等待 **5 秒**（`localStorage['dshcl-startup-delay']` 可改），随后**强制插播**一遍，即使此刻正在思考或输出也会被打断：
+开屏不是独立事件，而是 **峰谷价在启动时的一次检定**：首次拿到 `/state` 后等待 5 秒（`localStorage['dshcl-startup-delay']` 可改），随后触发 `peak_time` / `valley_time`，走和运行中完全相同的事件路径，没有单独的 startup 事件层。
 
-1. 峰谷：谷价播 `Special_A`、峰价播 `Sad_Begin`，并出对应文案
-2. 余额偏低：第一段结束后**立即**播 `Sad_Begin` + 催款文案，不再有 2 秒空档
-3. 演完自动回到原本的工作层（思考/说话）或基础层
+1. 峰价播 `peak_time`（一段 `sad_begin` 难过表情），谷价播 `valley_time`（`happy`）；
+2. 余额偏低：`lowBalance` 作为 20 优先级、排队的 textOnly 事件出队，只发催款文本；
+3. 演完按最新目标回到 `Idle` / `Sad_Idle` / `Think_Idle`，不再有 2 秒空档和 `startupHold`。
 
 ## 设置
 
-设置面板（右键桌宠 → 设置）：镜像、大小、吸附强度（0%–200%，0% 关闭）、气泡开关、气泡大小（50%–200%，100% 为基准）、更多层次的字体视觉效果（分级排版，默认开）、透明度、音效开关与音量。持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
+右键桌宠 → 设置保留高频项：镜像、大小、吸附强度（0%–200%，0% 关闭）、气泡开关、气泡大小（50%–200%，100% 为基准）、更多层次的字体视觉效果（分级排版，默认开）、透明度、音效开关与音量。
+
+目标模型另开独立的「可露希尔桌宠」设置页，放低频项：余额不足阈值、开屏延迟、按**基础状态分开**的闲时对话池（Idle / Sad_Idle / Think_Idle 各一份，不合并），以及按事件分的事件对话池；每份列表用 `+` 添加多条，触发时均匀随机。持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
 
 ## 拖拽
 
