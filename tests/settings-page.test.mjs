@@ -52,6 +52,9 @@ test('设置页渲染：阈值、状态池、事件池分开', () => {
   for (const label of ['可露希尔桌宠', '余额不足阈值', 'Idle 闲时', 'Sad_Idle 闲时', 'Think_Idle 闲时', '到账', '峰时', '谷时', '余额不足']) {
     assert.ok(text.includes(label), 'missing ' + label)
   }
+  const values = collect(tree).filter((n) => n.type === 'input').map((n) => String(n.props.value || ''))
+  assert.ok(values.includes('今天也辛苦了，博士。'), 'settings page should show config defaults')
+  assert.ok(values.includes('博士！预算快见底了\n该批经费啦！'), 'settings page should show lowBalance default')
 })
 
 test('设置页：改阈值会通过 setSettings 持久化', () => {
