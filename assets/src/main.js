@@ -39,7 +39,7 @@ import { createBubble } from './ui/bubble.js'
 import { createSticker } from './ui/sticker.js'
 import { createDrag } from './input/drag.js'
 import { createRuntime } from './anim/runtime.js'
-import { DEFAULT_DIALOGUES } from './anim/notices.js'
+import DEFAULT_DIALOGUES from './config/dialogues.json' with { type: 'json' }
 import { createVideoPlayer } from './render/video-player.js'
 import { createState } from './io/state.js'
 

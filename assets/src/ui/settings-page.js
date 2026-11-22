@@ -1,6 +1,8 @@
 // DSH 设置页：可露希尔桌宠低频配置。
 // React 由 client-entry 注入，避免依赖额外运行时。
 
+import DEFAULT_DIALOGUES from '../config/dialogues.json' with { type: 'json' }
+
 const STATE_GROUPS = [
   ['idle', 'Idle 闲时'],
   ['sadIdle', 'Sad_Idle 闲时'],
@@ -69,7 +71,10 @@ export function makeSettingsSection(React) {
   return function SettingsSection({ close }) {
     const [settings, setSettings] = React.useState(function () {
       const api = window.__dshClosurePet
-      return api && api.settings ? api.settings : {}
+      const base = api && api.settings ? api.settings : {}
+      return Object.assign({}, base, {
+        dialogues: Object.assign({}, DEFAULT_DIALOGUES, base.dialogues || {}),
+      })
     })
     const api = window.__dshClosurePet
 
