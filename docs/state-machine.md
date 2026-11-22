@@ -505,6 +505,7 @@ STARTUP_DUE -> fire(peak ? 'peak_time' : 'valley_time')
 - **事件对话池，按事件分列表**：
   - `dialogues.credited`、`dialogues.peakTime`、`dialogues.valleyTime`、`dialogues.lowBalance`、`dialogues.turnInterrupted`、`dialogues.toolFail`、`dialogues.toolSuccess`、`dialogues.turnEnd`；
   - 每个事件自己的 `notice` 类决定怎么取、怎么拼、怎么随机；
+- 默认文案来自 `assets/src/config/dialogues.json`，设置页直接读取并允许修改；
 - 每个列表支持 `+` 添加多条；触发时均匀随机一条，避免连续重复；
 - 其余高频项（大小、透明度、气泡）保留右键面板。
 

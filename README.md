@@ -27,7 +27,8 @@ assets/src/                   前端源码（打包进 lib/client.js，不直接
   anim/catalog.js             基础状态 + 事件注册表
   anim/machine.js             注册式状态机（纯 reduce/resolve）
   anim/runtime.js             effect 执行（player / 通知 / 定时器）
-  anim/notices.js             通知类 + 默认对话池
+  anim/notices.js             通知类
+  config/dialogues.json       默认对话文案（设置页读取并覆盖）
   audio.js                    音效（工厂）
   ui/layout.js                位置 / 吸附 / 翻转（工厂）
   ui/panel.js                 设置面板（工厂）
@@ -134,7 +135,7 @@ node --test "tests/*.test.mjs"   # 或 npm test
 
 右键桌宠 → 设置保留高频项：镜像、大小、吸附强度（0%–200%，0% 关闭）、气泡开关、气泡大小（50%–200%，100% 为基准）、更多层次的字体视觉效果（分级排版，默认开）、透明度、音效开关与音量。
 
-独立「可露希尔桌宠」设置页已接入：余额不足阈值、闲时对话间隔、按**基础状态分开**的闲时对话池（Idle / Sad_Idle / Think_Idle 各一份，不合并），以及按事件分的事件对话池；每份列表用 `+` 添加多条，触发时均匀随机。持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
+独立「可露希尔桌宠」设置页已接入：余额不足阈值、闲时对话间隔、按**基础状态分开**的闲时对话池（Idle / Sad_Idle / Think_Idle 各一份，不合并），以及按事件分的事件对话池；默认文案来自 `assets/src/config/dialogues.json`，设置页直接读取并允许增删改，修改后持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
 
 ## 拖拽
 
