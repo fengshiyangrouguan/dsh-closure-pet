@@ -32,6 +32,7 @@ assets/src/                   前端源码（打包进 lib/client.js，不直接
   ui/layout.js                位置 / 吸附 / 翻转（工厂）
   ui/panel.js                 设置面板（工厂）
   ui/bubble.js                像素气泡（工厂）
+  ui/settings-page.js         DSH 设置页（低频配置 / 对话池）
   ui/sticker.js               谷价贴画（工厂）
   input/drag.js               点击 / 拖拽 / 右键（工厂）
   io/state.js                 宿主状态轮询 + applyState 事件分发
@@ -133,7 +134,7 @@ node --test "tests/*.test.mjs"   # 或 npm test
 
 右键桌宠 → 设置保留高频项：镜像、大小、吸附强度（0%–200%，0% 关闭）、气泡开关、气泡大小（50%–200%，100% 为基准）、更多层次的字体视觉效果（分级排版，默认开）、透明度、音效开关与音量。
 
-目标模型另开独立的「可露希尔桌宠」设置页，放低频项：余额不足阈值、开屏延迟、按**基础状态分开**的闲时对话池（Idle / Sad_Idle / Think_Idle 各一份，不合并），以及按事件分的事件对话池；每份列表用 `+` 添加多条，触发时均匀随机。持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
+独立「可露希尔桌宠」设置页已接入：余额不足阈值、闲时对话间隔、按**基础状态分开**的闲时对话池（Idle / Sad_Idle / Think_Idle 各一份，不合并），以及按事件分的事件对话池；每份列表用 `+` 添加多条，触发时均匀随机。持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
 
 ## 拖拽
 

@@ -1,7 +1,7 @@
 # 动画状态机 v3.1（注册式基座）
 
-> 状态：3.0.0 已接入 `machine.js` / `runtime.js` / `catalog.js` / `notices.js`。
-> 设置页与部分数值（闲聊间隔、精确 from/to、工具事件优先级）仍待补。
+> 状态：3.0.0 已接入 `machine.js` / `runtime.js` / `catalog.js` / `notices.js`，并接上独立设置页。
+> 仍待补：精确 `from/to`、工具事件优先级、更多回归场景。
 
 ## 1. 目标
 
@@ -496,7 +496,7 @@ STARTUP_DUE -> fire(peak ? 'peak_time' : 'valley_time')
 在 DSH 设置里新增独立「可露希尔桌宠」页面，只放低频配置：
 
 - 余额不足阈值（`lowThreshold`，默认 10）；
-- 开屏延迟（`startupDelay`，默认 5000ms）；
+- 闲时对话间隔（`idleChatterMs`，默认 45000ms；0 = 关闭）；
 - **闲时随机对话池，按基础状态分列表，不合并**：
   - `dialogues.idle`：Idle 时的闲聊；
   - `dialogues.sadIdle`：Sad_Idle 时的闲聊；
