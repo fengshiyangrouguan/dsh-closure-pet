@@ -2,7 +2,7 @@
 //
 // A/B 两个 <video> 交替当后台：新片段先加载到后台，能出画后再交换 is-front，
 // 靠 0.18s 的 opacity 过渡完成交叉淡化，避免换动画时硬切。
-// 只负责「播哪一段、什么时候交换」；选哪一段、分层与播完接什么由 anim/director.js 决定。
+// 只负责「播哪一段、什么时候交换」；选哪一段、播完接什么由 anim/machine.js 决定。
 
 import { CLIP_FADE_MS, CLIPS } from '../anim/library.js'
 

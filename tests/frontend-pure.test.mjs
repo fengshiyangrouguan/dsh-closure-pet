@@ -21,7 +21,6 @@ test('env 常量', () => {
   assert.equal(env.FRAME.w, 443.6)
   assert.equal(env.FRAME.h, 373.4)
   assert.equal(env.STARTUP_DELAY, 5000)
-  assert.equal(env.INTERACT_SPLIT, 2.1)
 })
 
 test('settings 默认值与 localStorage 合并', () => {
@@ -57,8 +56,6 @@ test('动画数据表', () => {
   assert.ok(lib.CLIPS.Think_Idle.duration > 2)
   assert.ok(lib.CLIPS.Interact_1.duration + lib.CLIPS.Interact_2.duration > 4.3)
   assert.equal(lib.HAPPY_CHANCE, 0.25)
-  assert.ok(lib.THINK_CHANCE > 0 && lib.THINK_CHANCE <= 1)
-  assert.deepEqual(lib.INTERACT_ACTIONS, ['Interact_B'])
   assert.ok(lib.CLIP_FADE_MS >= 100 && lib.CLIP_FADE_MS <= 600)
 })
 

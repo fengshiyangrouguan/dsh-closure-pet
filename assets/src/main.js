@@ -9,7 +9,7 @@
 // 设置项：见 core/settings.js（右键桌宠打开面板）
 //
 // 动画：透明视频片段 + A/B 双缓冲交叉淡化（render/video-player.js），
-//   分层与播完接续在 anim/director.js；本文件只做 DOM、位置、交互与装配。
+//   动画状态机在 anim/machine.js；本文件只做 DOM、位置、交互与装配。
 //
 // 模块划分：
 //   core/env.js          常量 / 日志
@@ -17,14 +17,17 @@
 //   render/hit-test.js   静态命中区（图元 → 128×108 掩码）
 //   render/video-player.js 双缓冲视频播放（交叉淡化）
 //   anim/library.js      片段表（路径 / 时长 / 循环 / 节奏参数）
-//   anim/director.js     动画导演（分层状态机）
+//   anim/machine.js      注册式状态机（纯 reduce/resolve）
+//   anim/runtime.js      effect 执行（player / 通知 / 定时器）
+//   anim/catalog.js      基础状态 + 事件注册表
+//   anim/notices.js      通知类 + 默认对话池
 //   audio.js             音效（工厂）
 //   ui/layout.js         位置 / 吸附 / 翻转（工厂）
 //   main.js              组合根：DOM、状态机、交互、面板、轮询、开屏
 
 import {
   PREFIX, CANVAS_W, FRAME, DRAG_THRESHOLD_SQ, SIZE_MIN, SIZE_MAX, BUBBLE_SCALE_MIN, BUBBLE_SCALE_MAX, SNAP_STRENGTH_MIN, SNAP_STRENGTH_MAX,
-  INTERACT_SPLIT, STARTUP_DELAY, log, warn,
+  STARTUP_DELAY, log, warn,
 } from './core/env.js'
 import { settings, saveSettings } from './core/settings.js'
 import { HIT_MASK_W, HIT_MASK_H, HIT_GROW, HIT_FORMS, buildHitMask, maskHit } from './render/hit-test.js'
@@ -344,7 +347,6 @@ export function startPet(mountContainer) {
         openPanel: openPanel,
         closePanel: closePanel,
         get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume, lowThreshold: settings.lowThreshold, idleChatterMs: settings.idleChatterMs, dialogues: settings.dialogues || {} } },
-        get split() { return INTERACT_SPLIT },
         setSettings: function (patch) {
           if (patch) {
             if (patch.mirror) settings.mirror = patch.mirror

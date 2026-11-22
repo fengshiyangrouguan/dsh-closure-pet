@@ -28,13 +28,7 @@ export {
 }
 export const BLEND_BACK = 0.35
 
-// Interact 前后段的分界（秒）：2.10s = 30fps 第 63 帧，动作回正的中心点。
-// 一次取点后固定下来，不再放进设置面板（要调就改这里，或用 tools/scrub-server.mjs 重新取点）。
-export const INTERACT_SPLIT = 2.10
-// 从 Interact 回到 Idle 的混合时长（秒）：短到看不出叠影，又能消掉硬切的顿感
-export const INTERACT_MIX = 0.18
-
-// 开屏演出：首屏 10s 后强制插播一遍「峰谷 → 余额」（localStorage 可覆盖等待与空档）
+// 开屏演出：首屏 5s 后强制插播一遍峰谷检定
 export function numOverride(key, fallback) {
   var raw
   try { raw = localStorage.getItem(key) } catch (e) { return fallback }
