@@ -57,12 +57,14 @@ test('设置页渲染：阈值、状态池、事件池分开', () => {
   assert.ok(values.includes('博士！预算快见底了\n该批经费啦！'), 'settings page should show lowBalance default')
 })
 
-test('设置页：改阈值会通过 setSettings 持久化', () => {
+test('设置页：改阈值只 PATCH 改动字段并立即生效', () => {
   const calls = []
+  const puts = []
+  globalThis.fetch = (url, opts) => { puts.push({ url, body: JSON.parse(opts.body) }); return Promise.resolve({ ok: true, json: () => Promise.resolve({}) }) }
   globalThis.window = {
     __dshClosurePet: {
-      settings: { lowThreshold: 10, idleChatterMs: 45000, dialogues: {} },
-      setSettings: (patch) => calls.push(patch),
+      settings: { lowThreshold: 10, idleChatterMinutes: 45, idleChatterChance: 1, dialogues: {} },
+      setSettings: (...args) => calls.push(args),
     },
   }
   const React = {
@@ -74,5 +76,7 @@ test('设置页：改阈值会通过 setSettings 持久化', () => {
   const inputs = collect(tree).filter((n) => n.type === 'input' && n.props.type === 'number')
   assert.ok(inputs.length >= 2)
   inputs[0].props.onChange({ target: { value: '25' } })
-  assert.deepEqual(calls[0], { lowThreshold: 25 })
+  assert.deepEqual(calls[0][0], { lowThreshold: 25 })
+  assert.equal(calls[0][1], false)
+  assert.deepEqual(puts[0].body, { settings: { lowThreshold: 25 } })
 })
