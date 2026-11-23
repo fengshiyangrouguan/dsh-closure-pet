@@ -7,6 +7,7 @@ function harness() {
   const plays = []
   const notices = []
   const dialogs = []
+  const extendsMs = []
   const player = {
     play(name, opts) {
       plays.push({ name, opts })
@@ -18,6 +19,8 @@ function harness() {
     log: () => {},
     showNotice: (spec, event) => notices.push({ spec, event }),
     showDialog: (text) => dialogs.push(text),
+    playVoice: (text) => Promise.resolve(3000),
+    extendBubble: (ms) => extendsMs.push(ms),
     getDialogues: () => ({
       credited: ['经费到账'],
       lowBalance: ['余额见底'],
@@ -27,7 +30,7 @@ function harness() {
       interact: ['今天也辛苦了'],
     }),
   })
-  return { rt, plays, notices, dialogs, player }
+  return { rt, plays, notices, dialogs, extendsMs, player }
 }
 
 function lastPlay(plays) {
@@ -41,6 +44,14 @@ test('credited 事件播放 Celebrate 并调用通知类', () => {
   assert.equal(h.notices.length, 1)
   assert.equal(h.notices[0].event, 'credited')
   assert.ok(h.notices[0].spec.segments.length > 0)
+})
+
+test('语音时长会额外延长气泡 2 秒', async () => {
+  const h = harness()
+  h.rt.fire('credited')
+  await Promise.resolve()
+  await Promise.resolve()
+  assert.ok(h.extendsMs.includes(5000))
 })
 
 test('lowBalance 是 textOnly：不产生 play，只发通知', () => {

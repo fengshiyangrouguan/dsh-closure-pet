@@ -61,6 +61,9 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   opacity: 1,
   sound: true,
   volume: 0.7,
+  voice: false,
+  voiceLang: 'zh',
+  voiceVolume: 0.7,
   lowThreshold: LOW_THRESHOLD_DEFAULT,
   idleChatterMinutes: IDLE_CHATTER_MINUTES_DEFAULT,
   idleChatterChance: IDLE_CHATTER_CHANCE_DEFAULT,
@@ -92,6 +95,10 @@ export function normalizeSettings(raw, base) {
   if (typeof raw.sound === 'boolean') out.sound = raw.sound
   const volume = Number(raw.volume)
   if (Number.isFinite(volume)) out.volume = Math.min(1, Math.max(0, volume))
+  if (typeof raw.voice === 'boolean') out.voice = raw.voice
+  if (raw.voiceLang === 'zh' || raw.voiceLang === 'ja') out.voiceLang = raw.voiceLang
+  const voiceVolume = Number(raw.voiceVolume)
+  if (Number.isFinite(voiceVolume)) out.voiceVolume = Math.min(1, Math.max(0, voiceVolume))
   const lowThreshold = Number(raw.lowThreshold)
   if (Number.isFinite(lowThreshold)) out.lowThreshold = Math.min(1000000, Math.max(0, lowThreshold))
   const idleChatterMinutes = Number(raw.idleChatterMinutes)

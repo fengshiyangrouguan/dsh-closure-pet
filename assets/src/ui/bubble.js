@@ -24,6 +24,9 @@ export function createBubble(deps) {
   var BUBBLE_LINE = 30
   var BUBBLE_PAD = 12
   var BUBBLE_HIDE_MS = 5200
+  // 对话/事件气泡：当前 4.2s 作为最短基准，之后按可见字数延长。
+  var BUBBLE_MIN_MS = 4200
+  var BUBBLE_CHAR_MS = 90
   var BUBBLE_CORNER = 6
   var TAIL_W = 14
   var TAIL_H = 10
@@ -506,21 +509,43 @@ export function createBubble(deps) {
     bubbleEl.style.opacity = '0'
   }
 
+  function textOf(content) {
+    if (Array.isArray(content)) {
+      return content.map(function (row) { return row && row.text ? row.text : '' }).join('')
+    }
+    if (content && typeof content === 'object' && content.text) return content.text
+    return typeof content === 'string' ? content : ''
+  }
+
+  function textLength(content) {
+    return Array.from(textOf(content).replace(/\s/g, '')).length
+  }
+
+  function eventDuration(content, explicitMs) {
+    if (explicitMs !== undefined && explicitMs !== null) return explicitMs
+    var voiceMs = deps.voiceDuration ? deps.voiceDuration(textOf(content)) : 0
+    if (voiceMs > 0) return Math.max(BUBBLE_MIN_MS, voiceMs + 2000)
+    var chars = textLength(content)
+    var byChars = chars > 0 ? chars * BUBBLE_CHAR_MS : 0
+    return Math.max(BUBBLE_MIN_MS, byChars)
+  }
+
   function showBubble(eventText, eventMs) {
     if (!settings.bubble) return
     ensureFont()
     var wasVisible = bubbleShown
     bubbleDialogText = ''
     bubbleDialogUntil = 0
+    var ms = eventDuration(eventText, eventMs)
     if (Array.isArray(eventText)) {
       bubbleEventRows = eventText
       bubbleEventText = ''
-      bubbleEventUntil = Date.now() + (eventMs || 3600)
+      bubbleEventUntil = Date.now() + ms
       bubbleMode = 'event'
     } else if (eventText) {
       bubbleEventText = eventText
       bubbleEventRows = null
-      bubbleEventUntil = Date.now() + (eventMs || 3600)
+      bubbleEventUntil = Date.now() + ms
       bubbleMode = 'event'
     } else {
       bubbleEventRows = null
@@ -567,7 +592,7 @@ export function createBubble(deps) {
     bubbleEventRows = null
     bubbleEventText = ''
     bubbleDialogText = String(text)
-    bubbleDialogUntil = Date.now() + (eventMs || 4200)
+    bubbleDialogUntil = Date.now() + eventDuration(text, eventMs)
     bubbleMode = 'dialog'
     refreshBubble()
     bubbleShown = true
@@ -597,6 +622,27 @@ export function createBubble(deps) {
     }
   }
 
+  function extendDuration(ms) {
+    var extra = Number(ms)
+    if (!bubbleShown || !isFinite(extra) || extra <= 0) return
+    var until
+    if (bubbleMode === 'event') {
+      bubbleEventUntil = Math.max(bubbleEventUntil, Date.now() + extra)
+      until = bubbleEventUntil
+    } else if (bubbleMode === 'dialog') {
+      bubbleDialogUntil = Math.max(bubbleDialogUntil, Date.now() + extra)
+      until = bubbleDialogUntil
+    } else {
+      return
+    }
+    clearTimeout(bubbleHideTimer)
+    bubbleHideTimer = setTimeout(function () {
+      bubbleShown = false
+      popBubbleOut()
+      if (bubbleTickTimer) { clearInterval(bubbleTickTimer); bubbleTickTimer = 0 }
+    }, Math.max(700, until - Date.now()))
+  }
+
   function dispose() {
     hideBubble()
     if (bubbleFollowRaf) { cancelAnimationFrame(bubbleFollowRaf); bubbleFollowRaf = 0 }
@@ -609,5 +655,5 @@ export function createBubble(deps) {
     bubbleSvg = null
   }
 
-  return { show: showBubble, dialog: showDialog, refresh: refreshBubble, follow: followBubble, hide: hideBubble, dispose: dispose, isShown: function () { return bubbleShown } }
+  return { show: showBubble, dialog: showDialog, extend: extendDuration, refresh: refreshBubble, follow: followBubble, hide: hideBubble, dispose: dispose, isShown: function () { return bubbleShown } }
 }

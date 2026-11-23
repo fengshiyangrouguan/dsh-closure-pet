@@ -54,7 +54,22 @@ export function createRuntime(deps) {
         if (spec) {
           if (spec.text) lastText = spec.text
           if (spec.sound && deps.playSound) deps.playSound(spec.sound)
-          if (spec.dialog && deps.showDialog) deps.showDialog(spec.dialog, 4200)
+          if (deps.playVoice) {
+            var spoken = spec.dialog || spec.text || ''
+            if (!spoken && spec.segments) {
+              var body = spec.segments.find((seg) => seg && (seg.tier === 'body' || seg.tier === undefined))
+              spoken = body ? body.text : ''
+            }
+            if (spoken) {
+              var voiceResult = deps.playVoice(spoken)
+              if (voiceResult && typeof voiceResult.then === 'function' && deps.extendBubble) {
+                voiceResult.then(function (ms) {
+                  if (ms > 0) deps.extendBubble(ms + 2000)
+                }).catch(function () {})
+              }
+            }
+          }
+          if (spec.dialog && deps.showDialog) deps.showDialog(spec.dialog)
           else if (deps.showNotice) deps.showNotice(spec, effect.event)
         }
       } else if (effect.type === 'schedule') {

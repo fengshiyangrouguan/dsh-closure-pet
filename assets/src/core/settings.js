@@ -28,6 +28,7 @@ export function saveSettings(immediate) {
       snapStrength: settings.snapStrength,
       opacity: settings.opacity,
       sound: settings.sound, volume: settings.volume,
+      voice: settings.voice, voiceLang: settings.voiceLang, voiceVolume: settings.voiceVolume,
       lowThreshold: settings.lowThreshold,
       idleChatterMinutes: settings.idleChatterMinutes,
       idleChatterChance: settings.idleChatterChance,
@@ -44,6 +45,7 @@ export function saveSettings(immediate) {
         snapStrength: settings.snapStrength,
         opacity: settings.opacity,
         sound: settings.sound, volume: settings.volume,
+        voice: settings.voice, voiceLang: settings.voiceLang, voiceVolume: settings.voiceVolume,
       }
       // 宿主配置还没加载时不要提交新字段，避免默认值覆盖用户已保存的文本/配置
       if (settings.hostLoaded) {

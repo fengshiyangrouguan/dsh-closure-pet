@@ -50,6 +50,7 @@ function loadDialogueConfig() {
 }
 import { createVideoPlayer } from './render/video-player.js'
 import { createState } from './io/state.js'
+import { createVoice } from './voice.js'
 
 export function startPet(mountContainer) {
   if (window.__dshClosurePet) {
@@ -163,13 +164,15 @@ export function startPet(mountContainer) {
     ensureAudio: function () { if (audioEnsure) audioEnsure() },
     getDialogues: function () { return Object.assign({}, configDialogues, settings.dialogues || {}) },    getTypography: function () { return { tiers: settings.bubbleTiers !== false } },
     showNotice: function (spec) {
-      if (spec && spec.segments && spec.segments.length) showBubble(spec.segments, 4200)
-      else if (spec && spec.text) showBubble(spec.text, 4200)
+      if (spec && spec.segments && spec.segments.length) showBubble(spec.segments)
+      else if (spec && spec.text) showBubble(spec.text)
     },
     showDialog: function (text) {
-      if (bubbleApi) bubbleApi.dialog(text, 4200)
+      if (bubbleApi) bubbleApi.dialog(text)
     },
     playSound: function (name) { playSound(name) },
+    playVoice: function (text) { return voice ? voice.play(text) : Promise.resolve(0) },
+    extendBubble: function (ms) { if (bubbleApi) bubbleApi.extend(ms) },
   })
 
   function start() {
@@ -254,6 +257,8 @@ export function startPet(mountContainer) {
   var audioEnsure = audio.ensure
   var loadSounds = audio.loadSounds
   var playSound = audio.playSound
+  var voice = createVoice(function () { return settings })
+  voice.load()
 
   // ————————————————————— 气泡（像素风）—————————————————————
   // 实现在 ui/bubble.js；实例在组合阶段创建。
@@ -316,13 +321,14 @@ export function startPet(mountContainer) {
   })
   bubbleApi = createBubble({
     getState: function () { return stateApi ? stateApi.getState() : null }, pet: pet, size: size, settings: settings,
+    voiceDuration: function (text) { return voice ? voice.duration(text) : 0 },
   })
   stickerApi = createSticker({
     getState: function () { return stateApi ? stateApi.getState() : null }, pet: pet, size: size, settings: settings,
   })
   stateApi = createState({
     runtime: runtime,
-    showBubble: showBubble, refreshBubble: refreshBubble, playSound: playSound,
+    refreshBubble: refreshBubble, playSound: playSound,
     scheduleStartup: scheduleStartup,
     settings: settings, saveSettings: saveSettings,
     layout: layout, repositionForAnchor: repositionForAnchor,
@@ -377,6 +383,9 @@ export function startPet(mountContainer) {
             if (patch.opacity) settings.opacity = Number(patch.opacity)
             if (typeof patch.sound === 'boolean') settings.sound = patch.sound
             if (patch.volume !== undefined) settings.volume = Number(patch.volume)
+            if (typeof patch.voice === 'boolean') settings.voice = patch.voice
+            if (patch.voiceLang === 'zh' || patch.voiceLang === 'ja') settings.voiceLang = patch.voiceLang
+            if (patch.voiceVolume !== undefined) settings.voiceVolume = Math.min(1, Math.max(0, Number(patch.voiceVolume)))
             if (patch.lowThreshold !== undefined) settings.lowThreshold = Math.max(0, Number(patch.lowThreshold))
             if (patch.idleChatterMinutes !== undefined) settings.idleChatterMinutes = Math.max(0, Number(patch.idleChatterMinutes))
             if (patch.idleChatterChance !== undefined) settings.idleChatterChance = Math.min(1, Math.max(0, Number(patch.idleChatterChance)))
@@ -397,6 +406,7 @@ export function startPet(mountContainer) {
         hideBubble: hideBubble,
         get layers() { return runtime.layers },
         get sounds() { return audio.getState() },
+        get voice() { return voice.getState() },
         playSound: playSound,
         runStartup: runStartup,
         cancelStartup: cancelStartup,

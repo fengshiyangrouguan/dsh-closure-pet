@@ -6,7 +6,6 @@ import { HAPPY_CHANCE } from '../anim/library.js'
 
 export function createState(deps) {
   var runtime = deps.runtime
-  var showBubble = deps.showBubble
   var refreshBubble = deps.refreshBubble
   var scheduleStartup = deps.scheduleStartup
   var settings = deps.settings
@@ -67,9 +66,9 @@ export function createState(deps) {
       var curTurn = (s.turnEnd && s.turnEnd.seq) || 0
       if (curTurn > prevTurn) {
         var kind = (s.turnEnd && s.turnEnd.kind) || 'completed'
-        if (kind === 'completed') {
-          showBubble()
-        } else {
+        // completed 不再弹空白信息气泡：当前交互/事件气泡有自己的时长，
+        // 由 bubble 自己关闭，避免语音还没播完就被这里覆盖。
+        if (kind !== 'completed') {
           runtime.fire('turn-interrupted')
         }
       }
@@ -116,6 +115,9 @@ export function createState(deps) {
         if (isFinite(Number(s.opacity))) settings.opacity = Math.min(1, Math.max(0.3, Number(s.opacity)))
         if (typeof s.sound === 'boolean') settings.sound = s.sound
         if (isFinite(Number(s.volume))) settings.volume = Math.min(1, Math.max(0, Number(s.volume)))
+        if (typeof s.voice === 'boolean') settings.voice = s.voice
+        if (s.voiceLang === 'zh' || s.voiceLang === 'ja') settings.voiceLang = s.voiceLang
+        if (isFinite(Number(s.voiceVolume))) settings.voiceVolume = Math.min(1, Math.max(0, Number(s.voiceVolume)))
         if (isFinite(Number(s.lowThreshold))) settings.lowThreshold = Math.min(1000000, Math.max(0, Number(s.lowThreshold)))
         if (isFinite(Number(s.idleChatterMinutes))) settings.idleChatterMinutes = Math.min(1440, Math.max(0, Number(s.idleChatterMinutes)))
         else if (isFinite(Number(s.idleChatterMs))) settings.idleChatterMinutes = Math.min(1440, Math.max(0, Number(s.idleChatterMs) / 60000))

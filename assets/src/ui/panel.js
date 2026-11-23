@@ -253,6 +253,80 @@ export function createPanel(deps) {
     soundWrap.appendChild(volText)
     soundRow.appendChild(soundWrap)
 
+    // 语音：独立开关与语言（不影响音效）
+    var voiceRow = row('语音')
+    var voiceBtn = document.createElement('button')
+    voiceBtn.style.cssText = 'padding:3px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.18);' +
+      'background:rgba(255,255,255,.06);color:#dfe4f0;font:inherit;cursor:pointer'
+    function syncVoiceBtn() {
+      voiceBtn.textContent = settings.voice ? '开' : '关'
+      voiceBtn.style.background = settings.voice ? 'rgba(125,134,255,.85)' : 'rgba(255,255,255,.06)'
+      voiceBtn.style.color = settings.voice ? '#fff' : '#dfe4f0'
+    }
+    voiceBtn.addEventListener('click', function () {
+      settings.voice = !settings.voice
+      syncVoiceBtn()
+      saveSettings(true)
+    })
+    syncVoiceBtn()
+    voiceRow.appendChild(voiceBtn)
+
+    var voiceLangRow = row('语音语言')
+    var voiceLangBox = document.createElement('span')
+    voiceLangBox.style.cssText = 'display:inline-flex;border:1px solid rgba(255,255,255,.18);border-radius:7px;overflow:hidden'
+    var voiceLangButtons = {}
+    ;[['zh', '中文'], ['ja', '日语']].forEach(function (pair) {
+      var btn = document.createElement('button')
+      btn.textContent = pair[1]
+      btn.dataset.value = pair[0]
+      btn.style.cssText = 'padding:3px 9px;border:0;background:transparent;color:#cfd6e6;font:inherit;cursor:pointer'
+      btn.addEventListener('click', function () {
+        settings.voiceLang = pair[0]
+        saveSettings(true)
+        syncVoiceLang()
+      })
+      voiceLangButtons[pair[0]] = btn
+      voiceLangBox.appendChild(btn)
+    })
+    function syncVoiceLang() {
+      Object.keys(voiceLangButtons).forEach(function (k) {
+        var on = settings.voiceLang === k
+        voiceLangButtons[k].style.background = on ? 'rgba(125,134,255,.85)' : 'transparent'
+        voiceLangButtons[k].style.color = on ? '#fff' : '#cfd6e6'
+      })
+    }
+    syncVoiceLang()
+    voiceLangRow.appendChild(voiceLangBox)
+
+    // 语音音量独立于音效音量
+    var voiceVolRow = row('语音音量')
+    var voiceVolWrap = document.createElement('span')
+    voiceVolWrap.style.cssText = 'display:inline-flex;align-items:center;gap:8px'
+    var voiceVolSlider = document.createElement('input')
+    voiceVolSlider.type = 'range'
+    voiceVolSlider.min = '0'
+    voiceVolSlider.max = '1'
+    voiceVolSlider.step = '0.05'
+    voiceVolSlider.value = String(settings.voiceVolume === undefined ? 0.7 : settings.voiceVolume)
+    voiceVolSlider.style.cssText = 'width:74px;accent-color:#7d86ff;cursor:pointer'
+    var voiceVolText = document.createElement('span')
+    voiceVolText.style.cssText = 'width:34px;text-align:right;color:#cfd6e6'
+    function syncVoiceVolume() {
+      var v = settings.voiceVolume === undefined ? 0.7 : settings.voiceVolume
+      voiceVolSlider.value = String(v)
+      voiceVolText.textContent = Math.round(v * 100) + '%'
+    }
+    voiceVolSlider.addEventListener('input', function () {
+      settings.voiceVolume = Math.min(1, Math.max(0, Number(voiceVolSlider.value) || 0))
+      syncVoiceVolume()
+      saveSettings(false)
+    })
+    voiceVolSlider.addEventListener('change', function () { saveSettings(true) })
+    syncVoiceVolume()
+    voiceVolWrap.appendChild(voiceVolSlider)
+    voiceVolWrap.appendChild(voiceVolText)
+    voiceVolRow.appendChild(voiceVolWrap)
+
     // 操作
     var actions = document.createElement('div')
     actions.style.cssText = 'display:flex;gap:8px;margin-top:9px'
@@ -274,6 +348,9 @@ export function createPanel(deps) {
     return {
       syncMirrorButtons: syncMirrorButtons,
       syncTiersBtn: syncTiersBtn,
+      syncVoiceBtn: syncVoiceBtn,
+      syncVoiceLang: syncVoiceLang,
+      syncVoiceVolume: syncVoiceVolume,
       slider: slider,
       sizeText: sizeText,
       snapSlider: snapSlider,
@@ -295,6 +372,9 @@ export function createPanel(deps) {
       panelApi.bubbleScaleText.textContent = Math.round(settings.bubbleScale) + '%'
       panelApi.syncTiersBtn()
       panelApi.syncMirrorButtons()
+      panelApi.syncVoiceBtn()
+      panelApi.syncVoiceLang()
+      panelApi.syncVoiceVolume()
     }
     panel.style.display = 'block'
     // 放在桌宠上方；下方放不下就放下方
