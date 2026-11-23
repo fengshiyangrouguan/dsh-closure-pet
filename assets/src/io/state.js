@@ -121,6 +121,7 @@ export function createState(deps) {
         else if (isFinite(Number(s.idleChatterMs))) settings.idleChatterMinutes = Math.min(1440, Math.max(0, Number(s.idleChatterMs) / 60000))
         if (isFinite(Number(s.idleChatterChance))) settings.idleChatterChance = Math.min(1, Math.max(0, Number(s.idleChatterChance)))
         if (s.dialogues && typeof s.dialogues === 'object') settings.dialogues = s.dialogues
+        settings.hostLoaded = true
         layout()
         repositionForAnchor()
         resolveFlip()

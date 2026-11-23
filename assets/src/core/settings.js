@@ -38,10 +38,24 @@ export function saveSettings(immediate) {
   clearTimeout(saveTimer)
   var push = function () {
     try {
+      var payload = {
+        mirror: settings.mirror, size: settings.size,
+        bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers,
+        snapStrength: settings.snapStrength,
+        opacity: settings.opacity,
+        sound: settings.sound, volume: settings.volume,
+      }
+      // 宿主配置还没加载时不要提交新字段，避免默认值覆盖用户已保存的文本/配置
+      if (settings.hostLoaded) {
+        payload.lowThreshold = settings.lowThreshold
+        payload.idleChatterMinutes = settings.idleChatterMinutes
+        payload.idleChatterChance = settings.idleChatterChance
+        payload.dialogues = settings.dialogues || {}
+      }
       fetch(PREFIX + '/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: settings }),
+        body: JSON.stringify({ settings: payload }),
       }).catch(function () {})
     } catch (err) {}
   }

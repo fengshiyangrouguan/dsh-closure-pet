@@ -101,6 +101,17 @@ test('apply() 注册事件与全部路由', async (t) => {
   assert.equal(saved.version, 1)
   assert.equal(saved.settings.size, 2)
 
+  // 局部 PUT 不能丢掉已保存的 dialogues / 闲时配置
+  const put2 = await callRoute(routes, '/dsh-closure/config', 'PUT', {
+    settings: { dialogues: { idle: ['自定义文本'] }, idleChatterMinutes: 5, idleChatterChance: 0.4 },
+  })
+  assert.equal(put2.statusCode, 200)
+  const saved2 = JSON.parse(await fs.readFile(path.join(tmpHome, '.dshcl.json'), 'utf8'))
+  assert.deepEqual(saved2.settings.dialogues, { idle: ['自定义文本'] })
+  assert.equal(saved2.settings.idleChatterMinutes, 5)
+  assert.equal(saved2.settings.idleChatterChance, 0.4)
+  assert.equal(saved2.settings.size, 2, 'partial PUT should keep earlier settings')
+
   // session/event：assistant/message 计费后 /state 能读到
   const peak = Date.parse('2026-11-19T02:00:00Z')
   root.handlers['session/event'][0](null, {

@@ -40,6 +40,14 @@ import { createSticker } from './ui/sticker.js'
 import { createDrag } from './input/drag.js'
 import { createRuntime } from './anim/runtime.js'
 import DEFAULT_DIALOGUES from './config/dialogues.json' with { type: 'json' }
+
+let configDialogues = DEFAULT_DIALOGUES
+function loadDialogueConfig() {
+  fetch(PREFIX + '/assets/src/config/dialogues.json', { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : null })
+    .then(function (json) { if (json && typeof json === 'object') configDialogues = json })
+    .catch(function () {})
+}
 import { createVideoPlayer } from './render/video-player.js'
 import { createState } from './io/state.js'
 
@@ -153,7 +161,7 @@ export function startPet(mountContainer) {
     idleChatterMs: Number(settings.idleChatterMinutes || 0) * 60000,
     idleChatterChance: settings.idleChatterChance === undefined ? 1 : settings.idleChatterChance,
     ensureAudio: function () { if (audioEnsure) audioEnsure() },
-    getDialogues: function () { return Object.assign({}, DEFAULT_DIALOGUES, settings.dialogues || {}) },    getTypography: function () { return { tiers: settings.bubbleTiers !== false } },
+    getDialogues: function () { return Object.assign({}, configDialogues, settings.dialogues || {}) },    getTypography: function () { return { tiers: settings.bubbleTiers !== false } },
     showNotice: function (spec) {
       if (spec && spec.segments && spec.segments.length) showBubble(spec.segments, 4200)
       else if (spec && spec.text) showBubble(spec.text, 4200)
@@ -338,6 +346,7 @@ export function startPet(mountContainer) {
       start()
       startPolling()
       loadHostConfig()
+      loadDialogueConfig()
       loadSounds()
       log('启动完成', ANIMATION_NAMES.length, 'animations · size', settings.size, '· mirror', settings.mirror)
 
@@ -351,7 +360,7 @@ export function startPet(mountContainer) {
         openPanel: openPanel,
         closePanel: closePanel,
         get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume, lowThreshold: settings.lowThreshold, idleChatterMinutes: settings.idleChatterMinutes, idleChatterChance: settings.idleChatterChance, dialogues: settings.dialogues || {} } },
-        setSettings: function (patch) {
+        setSettings: function (patch, persist) {
           if (patch) {
             if (patch.mirror) settings.mirror = patch.mirror
             if (patch.size) settings.size = Number(patch.size)
@@ -376,7 +385,7 @@ export function startPet(mountContainer) {
             }
             if (patch.dialogues && typeof patch.dialogues === 'object') settings.dialogues = patch.dialogues
           }
-          saveSettings(true); layout(); repositionForAnchor(); resolveFlip(); applyOpacity()
+          saveSettings(persist !== false); layout(); repositionForAnchor(); resolveFlip(); applyOpacity()
           if (bubbleApi && bubbleApi.isShown()) refreshBubble()
           if (!settings.bubble) hideBubble()
         },

@@ -2,6 +2,7 @@
 // React 由 client-entry 注入，避免依赖额外运行时。
 
 import DEFAULT_DIALOGUES from '../config/dialogues.json' with { type: 'json' }
+import { PREFIX } from '../core/env.js'
 
 const STATE_GROUPS = [
   ['idle', 'Idle 闲时'],
@@ -68,18 +69,48 @@ export function makeSettingsSection(React) {
   }
 
   return function SettingsSection({ close }) {
+    const api = window.__dshClosurePet
     const [settings, setSettings] = React.useState(function () {
-      const api = window.__dshClosurePet
       const base = api && api.settings ? api.settings : {}
       return Object.assign({}, base, {
         dialogues: Object.assign({}, DEFAULT_DIALOGUES, base.dialogues || {}),
       })
     })
-    const api = window.__dshClosurePet
+
+    // 打开设置页时从宿主配置与运行时 JSON 重新读取，避免页面早于 boot 完成时用默认值覆盖。
+    if (React.useEffect) {
+      React.useEffect(function () {
+        let alive = true
+        Promise.all([
+          fetch(PREFIX + '/config', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null),
+          fetch(PREFIX + '/assets/src/config/dialogues.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null),
+        ]).then(([cfg, file]) => {
+          if (!alive) return
+          const host = (cfg && cfg.settings) || {}
+          const dialogues = Object.assign({}, DEFAULT_DIALOGUES, file || {}, host.dialogues || {})
+          setSettings(Object.assign({}, host, {
+            dialogues,
+            idleChatterMinutes: host.idleChatterMinutes === undefined ? 1 : host.idleChatterMinutes,
+            idleChatterChance: host.idleChatterChance === undefined ? 1 : host.idleChatterChance,
+            lowThreshold: host.lowThreshold === undefined ? 10 : host.lowThreshold,
+          }))
+        })
+        return function () { alive = false }
+      }, [])
+    }
 
     function patch(next) {
       setSettings(Object.assign({}, settings, next))
-      if (api && api.setSettings) api.setSettings(next)
+      if (api && api.setSettings) {
+        // 本地立即生效，但不要走旧的整包 saveSettings；由这里直接 PATCH 宿主配置，
+        // 只提交改动的字段，避免用客户端默认值覆盖已持久化的 dialogues。
+        api.setSettings(next, false)
+      }
+      fetch(PREFIX + '/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: next }),
+      }).catch(function () {})
     }
 
     function patchDialogue(key, value) {
