@@ -12,6 +12,7 @@ export const SCHEMA_VERSION = 1
 export const URL_PREFIX = '/dsh-closure'
 export const STATE_PATH = URL_PREFIX + '/state'
 export const CONFIG_PATH = URL_PREFIX + '/config'
+export const HARDWARE_PATH = URL_PREFIX + '/hardware'
 
 export const SIZE_MIN = 0.6
 export const SIZE_MAX = 2.0
@@ -68,6 +69,9 @@ export const SETTINGS_DEFAULTS = Object.freeze({
   lowThreshold: LOW_THRESHOLD_DEFAULT,
   idleChatterMinutes: IDLE_CHATTER_MINUTES_DEFAULT,
   idleChatterChance: IDLE_CHATTER_CHANCE_DEFAULT,
+  // 硬件状态挂牌：默认关闭；位置默认在桌宠下方。
+  plate: false,
+  platePosition: 'bottom',
   dialogues: {},
 })
 
@@ -106,6 +110,8 @@ export function normalizeSettings(raw, base) {
   if (Number.isFinite(idleChatterMinutes)) out.idleChatterMinutes = Math.min(1440, Math.max(0, idleChatterMinutes))
   const idleChatterChance = Number(raw.idleChatterChance)
   if (Number.isFinite(idleChatterChance)) out.idleChatterChance = Math.min(1, Math.max(0, idleChatterChance))
+  if (typeof raw.plate === 'boolean') out.plate = raw.plate
+  if (raw.platePosition === 'top' || raw.platePosition === 'bottom') out.platePosition = raw.platePosition
   if (raw.dialogues && typeof raw.dialogues === 'object') {
     out.dialogues = { ...normalizeDialogues(out.dialogues), ...normalizeDialogues(raw.dialogues) }
   }

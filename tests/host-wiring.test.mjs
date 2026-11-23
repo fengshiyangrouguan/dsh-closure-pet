@@ -57,6 +57,12 @@ test('apply() 注册事件与全部路由', async (t) => {
   assert.deepEqual(inject, ['webServer', 'connection'])
   apply(root)
 
+  // 先注册清理，后续断言失败也不会留下轮询定时器
+  t.after(async () => {
+    for (const d of cleanups) { try { d() } catch (err) {} }
+    await fs.rm(tmpHome, { recursive: true, force: true })
+  })
+
   // 事件订阅
   for (const ev of ['session/event', 'agent/assistant-stream', 'tools/result', 'agent/error', 'agent/status']) {
     assert.ok(root.handlers[ev] && root.handlers[ev].length === 1, 'missing event ' + ev)
@@ -67,13 +73,9 @@ test('apply() 注册事件与全部路由', async (t) => {
     'exact /dsh-closure/ping',
     'exact /dsh-closure/state',
     'exact /dsh-closure/config',
+    'exact /dsh-closure/hardware',
     'prefix /dsh-closure/assets',
   ])
-
-  t.after(async () => {
-    for (const d of cleanups) { try { d() } catch (err) {} }
-    await fs.rm(tmpHome, { recursive: true, force: true })
-  })
 
   // /state
   const state = await callRoute(routes, '/dsh-closure/state', 'GET')
@@ -111,6 +113,18 @@ test('apply() 注册事件与全部路由', async (t) => {
   assert.equal(saved2.settings.idleChatterMinutes, 5)
   assert.equal(saved2.settings.idleChatterChance, 0.4)
   assert.equal(saved2.settings.size, 2, 'partial PUT should keep earlier settings')
+
+  // /hardware：固定形状；无 nvidia-smi 也必须是 200 + gpus: []
+  const hw = await callRoute(routes, '/dsh-closure/hardware', 'GET')
+  assert.equal(hw.statusCode, 200)
+  const hwBody = JSON.parse(hw.body)
+  assert.equal(hwBody.ok, true)
+  assert.ok(hwBody.cpu === null || typeof hwBody.cpu === 'number')
+  assert.equal(typeof hwBody.mem.used, 'number')
+  assert.equal(typeof hwBody.mem.total, 'number')
+  assert.ok(Array.isArray(hwBody.gpus))
+  const hwPost = await callRoute(routes, '/dsh-closure/hardware', 'POST')
+  assert.equal(hwPost.statusCode, 405)
 
   // session/event：assistant/message 计费后 /state 能读到
   const peak = Date.parse('2026-11-19T02:00:00Z')

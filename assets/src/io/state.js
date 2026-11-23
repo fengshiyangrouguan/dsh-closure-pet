@@ -14,6 +14,7 @@ export function createState(deps) {
   var repositionForAnchor = deps.repositionForAnchor
   var resolveFlip = deps.resolveFlip
   var applyOpacity = deps.applyOpacity
+  var applyPlate = deps.applyPlate
   var isBubbleShown = deps.isBubbleShown
 
   var pollTimer = 0
@@ -122,12 +123,15 @@ export function createState(deps) {
         if (isFinite(Number(s.idleChatterMinutes))) settings.idleChatterMinutes = Math.min(1440, Math.max(0, Number(s.idleChatterMinutes)))
         else if (isFinite(Number(s.idleChatterMs))) settings.idleChatterMinutes = Math.min(1440, Math.max(0, Number(s.idleChatterMs) / 60000))
         if (isFinite(Number(s.idleChatterChance))) settings.idleChatterChance = Math.min(1, Math.max(0, Number(s.idleChatterChance)))
+        if (typeof s.plate === 'boolean') settings.plate = s.plate
+        if (s.platePosition === 'top' || s.platePosition === 'bottom') settings.platePosition = s.platePosition
         if (s.dialogues && typeof s.dialogues === 'object') settings.dialogues = s.dialogues
         settings.hostLoaded = true
         layout()
         repositionForAnchor()
         resolveFlip()
         applyOpacity()
+        if (applyPlate) applyPlate()
         if (isBubbleShown()) refreshBubble()
         saveSettings(true)
       })

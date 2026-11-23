@@ -26,9 +26,13 @@ test('宿主配置加载后 saveSettings 提交完整低频配置', () => {
   settings.dialogues = { idle: ['用户文本'] }
   settings.idleChatterMinutes = 5
   settings.idleChatterChance = 0.4
+  settings.plate = true
+  settings.platePosition = 'top'
   saveSettings(true)
   assert.equal(calls.length, 1)
   assert.deepEqual(calls[0].settings.dialogues, { idle: ['用户文本'] })
   assert.equal(calls[0].settings.idleChatterMinutes, 5)
   assert.equal(calls[0].settings.idleChatterChance, 0.4)
+  assert.equal(calls[0].settings.plate, true)
+  assert.equal(calls[0].settings.platePosition, 'top')
 })

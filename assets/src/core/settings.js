@@ -32,6 +32,8 @@ export function saveSettings(immediate) {
       lowThreshold: settings.lowThreshold,
       idleChatterMinutes: settings.idleChatterMinutes,
       idleChatterChance: settings.idleChatterChance,
+      plate: settings.plate,
+      platePosition: settings.platePosition,
       dialogues: settings.dialogues || {},
     }))
   } catch (err) {}
@@ -52,6 +54,8 @@ export function saveSettings(immediate) {
         payload.lowThreshold = settings.lowThreshold
         payload.idleChatterMinutes = settings.idleChatterMinutes
         payload.idleChatterChance = settings.idleChatterChance
+        payload.plate = settings.plate
+        payload.platePosition = settings.platePosition
         payload.dialogues = settings.dialogues || {}
       }
       fetch(PREFIX + '/config', {
