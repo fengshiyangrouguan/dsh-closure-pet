@@ -29,7 +29,8 @@ export const IDLE_CHATTER_CHANCE_DEFAULT = 0.5
 export const DIALOGUE_KEYS = [
   'idle', 'sadIdle', 'thinkIdle',
   'lowBalance', 'credited', 'peakTime', 'valleyTime',
-  'turnInterrupted', 'error', 'toolSuccess', 'turnEnd', 'interact',
+  'turnInterrupted', 'error', 'toolSuccess', 'turnEnd',
+  'interact', 'interactIdle', 'interactSadIdle', 'interactThinkIdle',
 ]
 
 export function normalizeDialogues(raw) {

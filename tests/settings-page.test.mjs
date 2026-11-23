@@ -49,7 +49,7 @@ test('设置页渲染：阈值、状态池、事件池分开', () => {
   const Section = makeSettingsSection(React)
   const tree = Section({ close: () => {} })
   const text = walk(tree).join(' ')
-  for (const label of ['可露希尔桌宠', '余额不足阈值', '闲时对话间隔', '闲时对话触发概率', 'Idle 闲时', 'Sad_Idle 闲时', 'Think_Idle 闲时', '到账', '峰时', '谷时', '余额不足']) {
+  for (const label of ['可露希尔桌宠', '余额不足阈值', '闲时对话间隔', '闲时对话触发概率', 'Idle 闲时', 'Sad_Idle 闲时', 'Think_Idle 闲时', '点击交互对话池', '通用池', '到账', '峰时', '谷时', '余额不足']) {
     assert.ok(text.includes(label), 'missing ' + label)
   }
   const values = collect(tree).filter((n) => n.type === 'input').map((n) => String(n.props.value || ''))

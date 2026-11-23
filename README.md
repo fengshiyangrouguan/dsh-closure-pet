@@ -1,189 +1,233 @@
-# dsh-closure-pet
+<div align="center">
 
-基于《明日方舟》游戏截图二次创作的可露希尔桌宠，运行在 DeepSeek Harness 界面上：透明动画、像素气泡、余额与花费提示。
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e293b,50:334155,100:0f172a&height=165&section=header&text=dsh-closure-pet&fontSize=44&fontColor=f8fafc&animation=twinkling" alt="dsh-closure-pet banner" width="100%" />
+<br />
 
-> **声明**：本插件是个人二次创作，角色形象取自游戏截图，角色形象权利归原权利人；动画为本项目自行制作的透明视频，音效借用自游戏内音效（权利归原权利人）。
-> 本插件的代码可按 MIT 许可证使用；角色形象、音效与动画不在 MIT 授权范围内，仅限个人本机娱乐使用，再分发前请自行确认权利。字体使用 Ark Pixel（SIL OFL 1.1，见 `assets/fonts/OFL.txt`）。完整说明见 [`NOTICE.md`](NOTICE.md)。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Runtime: DeepSeek Harness](https://img.shields.io/badge/Host-DeepSeek%20Harness-0ea5e9?style=flat-square)](https://github.com/deepseek-ai/deepseek-harness)
+[![Video: WebM VP9-Alpha](https://img.shields.io/badge/Media-WebM%20VP9--Alpha-10b981?style=flat-square)](#效果预览)
+[![Voice: Ark Pixel + OGG](https://img.shields.io/badge/Assets-Ark%20Pixel%20%2B%20OGG-f59e0b?style=flat-square)](#语音与文案)
+[![Tests](https://img.shields.io/badge/Tests-node%20--test-6366f1?style=flat-square)](#开发与验证)
 
-## 结构
+</div>
 
-```
-lib/index.js                  宿主入口：装配（store / events / routes）
-lib/store.js                  运行时状态、花费累计、持久化、余额轮询
-lib/events.js                 DSH 事件订阅（session/event、agent/*、tools/result）
-lib/routes.js                 /ping、/state、/config、/assets/*
-lib/period.js                 峰谷时段（纯函数，北京时间）
-lib/billing.js                计费价目与单条消息花费（纯函数）
-lib/client.js                 客户端 bundle（esbuild 打包，自包含，注册到 shell.overlay）
-assets/src/                   前端源码（打包进 lib/client.js，不直接由宿主提供）
-  client-entry.js             客户端 bundle 入口：factory / slot 注册
-  main.js                     组合根：DOM、位置、交互、装配
-  core/env.js                 常量 / 日志
-  core/settings.js            设置读写与持久化
-  shared/protocol.js          前后端共享协议（版本 / 路径 / 设置归一化）
-  render/hit-test.js          静态命中区（图元 → 128×108 掩码）
-  render/video-player.js      透明视频播放：A/B 双缓冲 + 交叉淡化
-  anim/library.js             片段表（路径 / 时长 / 循环）
-  anim/catalog.js             基础状态 + 事件注册表
-  anim/machine.js             注册式状态机（纯 reduce/resolve）
-  anim/runtime.js             effect 执行（player / 通知 / 定时器）
-  anim/notices.js             通知类
-  config/dialogues.json       默认对话文案（设置页读取并覆盖）
-  audio.js                    音效（工厂）
-  ui/layout.js                位置 / 吸附 / 翻转（工厂）
-  ui/panel.js                 设置面板（工厂）
-  ui/bubble.js                像素气泡（工厂）
-  ui/settings-page.js         DSH 设置页（低频配置 / 对话池）
-  ui/sticker.js               谷价贴画（工厂）
-  input/drag.js               点击 / 拖拽 / 右键（工厂）
-  io/state.js                 宿主状态轮询 + applyState 事件分发
-assets/video/                 透明动画（888×748，WebM VP9-alpha；新片段 + 旧片段备份）
-assets/fonts/                 Ark Pixel 12px + OFL
-assets/audio/                 click / fail / coin / turnfail（Opus 56k）
-tests/                        node --test 用例（宿主纯函数 / 前端模块 / DOM 桩接线）
-docs/state-machine.md         状态机 v3 设计稿（三基础 loop + Begin 转场 + one-shot 事件）
-cordis.patch.yml              bundle 入口
+给 DeepSeek Harness 界面加一只可露希尔桌宠：透明视频动作切换、像素风格气泡、实时计费与余额提醒，以及可编辑的台词与语音。
+
+<div align="center">
+  <img src="docs/preview/hero-card.png" alt="可露希尔桌宠实际运行预览" width="600" />
+</div>
+
+> [!WARNING]
+> **版权与使用边界**：本插件属于个人二次创作，角色形象取自《明日方舟》游戏截图，音效借用自游戏内音频，相关权利归原权利人所有；自行制作的透明动画与本仓库代码可按 MIT 许可证使用，但角色形象、音效及衍生素材**仅限个人本机娱乐使用**，对外再分发前请自行确认权利。字体使用 **Ark Pixel**（遵循 SIL OFL 1.1，见 `assets/fonts/OFL.txt`）。完整说明见 [`NOTICE.md`](NOTICE.md)。
+
+---
+
+## 快速开始
+
+### 1. 从仓库安装
+
+在 **Plugins → Add plugin** 中填入仓库地址：
+
+```text
+[https://github.com/fengshiyangrouguan/dsh-closure-pet](https://github.com/fengshiyangrouguan/dsh-closure-pet)
 ```
 
-## 安装
-
-### 从仓库安装（推荐）
-
-在 Plugins → Add plugin 里填仓库地址：
-
-```
-https://github.com/fengshiyangrouguan/dsh-closure-pet
-```
-
-或手动在 profile 的 `package.json` 加依赖，并把插件名加进 `dsh.profile.bundles`：
+或者手动编辑对应 profile 的 `package.json`，添加依赖并将插件名写入 `dsh.profile.bundles`：
 
 ```json
-"dsh-closure-pet": "github:fengshiyangrouguan/dsh-closure-pet"
+{
+  "dependencies": {
+    "dsh-closure-pet": "github:fengshiyangrouguan/dsh-closure-pet"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": ["dsh-closure-pet"]
+    }
+  }
+}
 ```
 
-### 本地开发安装
+### 2. 本地开发安装
+
+将依赖指向本地目录，同样需要加入 `dsh.profile.bundles`：
 
 ```json
-"dsh-closure-pet": "link:<本地路径>/dsh-closure-pet"
+{
+  "dependencies": {
+    "dsh-closure-pet": "link:<本地路径>/dsh-closure-pet"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": ["dsh-closure-pet"]
+    }
+  }
+}
 ```
 
-同样需要把 `dsh-closure-pet` 放进 `dsh.profile.bundles`。
+### 3. 卸载方式
 
-## 开发
+1. 在插件管理中停用插件（客户端 bundle 会随之卸载；若改过宿主代码，按需重启 DSH）。
+2. 从 profile 的 `dependencies` 和 `dsh.profile.bundles` 中删除 `dsh-closure-pet`。
+3. 如需清理配置与当日花费记录，可手动删除 `$DSH_HOME/.dshcl.json`。
 
-| 改动 | 生效方式 |
+---
+
+## 核心功能
+
+### 动画状态机与表现
+
+* **基础状态与转场**：内置 `idle`、`sad`、`think` 三种基础状态，均配有独立 `loop`、`enter` 与 `exit` 槽位。状态切换通过 `Sad_Begin` / `Think_Begin` 正放进入、倒放退出，`sad` 与 `think` 之间经由 `idle` 中转，跨多段转场时自动调整倍速，离开 `idle` 前会等当前循环走完一轮。
+* **事件与通知联动**：监听 `agent/assistant-stream`、`tools/result`、`agent/error`、`agent/status`、`session/event`（`assistant/message` 计费、`turn/end` 结束）及每 60 秒一次的账户余额轮询。事件可绑定单段或多段视频（均匀随机抽取），并携带 `notice` 实例动态组装文案与气泡。
+* **开屏检定**：拿到 `/state` 后默认延迟 5 秒（可通过 `localStorage['dshcl-startup-delay']` 调整）执行一次峰谷检定，走常规事件管线触发 `peak_time` 或 `valley_time`，若余额偏低则将 `lowBalance`（优先级 20，纯文本通知）排入队列提示。
+* **独立状态机**：取消历史跨函数状态标记（如 `talkLock`、`startupHold`、`enteringSad`、`afterOverlay`），统一由单一 active 片段、`seq` 与纯 `resolve()` 驱动。详细设计见 [`docs/state-machine.md`](docs/state-machine.md)。
+
+### 计费、峰谷时段与余额提醒
+
+* **计费公式**：按 `assistant/message` 的 `usage` 计算单条消息花费：
+  $$\text{花费} = \text{cacheRead} \times \text{谷/峰价} + \text{input} \times \text{未命中价} + \text{output} \times \text{输出价}$$
+  价目（每百万 token，`[谷价, 峰价]`）内置于 `lib/index.js`，当日累计花费与设置一并持久化至 `$DSH_HOME/.dshcl.json`。
+* **峰谷判定（北京时间）**：
+  * **峰价时段**：工作日 `09:00–12:00`、`14:00–18:00`。
+  * **谷价时段**：其余时间、周末及法定节假日全天。
+* **节假日表维护**：闭区间表位于 `lib/index.js` 的 `HOLIDAY_RANGES`（当前收录 2026 全年与 2027 推定日期）。官方公布次年调休安排后更新对应区间即可；未收录年份会退化为仅按工作日与周末计算，此时 `/state` 中 `holidaysOutdated` 会置为 true 以便提醒更新。
+
+### 语音与文案
+
+* **预生成语音**：中文原台词与日语翻译均预生成为 OGG 文件存放于 `assets/voice/`，通过 `manifest.json` 映射至中文原文。开启语音后气泡按 **语音时长 + 2 秒** 停留，无语音时按可见字符数计算（最短 4.2 秒），运行时无需加载 CosyVoice。
+* **可编辑台词库**：DSH 设置页支持调整余额不足阈值、闲时对话间隔，并分别维护 `Idle`、`Sad_Idle`、`Think_Idle` 闲时池及各事件对话池（初始值来自 `assets/src/config/dialogues.json`）。
+
+### 交互、设置与运行开销
+
+* **拖拽防误触锁定**：按下桌宠后在 window 捕获阶段拦截 `pointerdown`、`mousedown`、`selectstart`、`dragstart`，为 `<html>` 加上 `dshcl-dragging` 样式（`user-select:none`、`cursor:grabbing`），并铺设 `#dsh-closure-pet-drag-shield` 遮罩层防止点穿或被 iframe 抢焦点；松手后吞掉单次合成 `click`，失焦、切后台或 `pointercancel` 时自动清理。
+* **桌面右键设置**：支持镜像翻转、缩放大小、吸附强度（`0%–200%`，`0%` 关闭）、气泡开关与大小（`50%–200%`）、分级字体排版（默认开启）、透明度、音效开关/音量，以及语音开关、语言（中文/日语）与独立音量。入口与完整设置项见[设置入口](#设置入口)。
+* **轻量渲染**：角色由浏览器直接解码 `888×748` 的 WebM VP9-Alpha 视频，不再逐帧重绘，也不依赖 WebGPU；页面隐藏时暂停视频播放，并将状态轮询间隔从 1 秒放宽至 5 秒。
+
+### 设置入口
+
+桌宠有两套设置，入口和用途不同：
+
+| 入口 | 打开方式 | 主要设置项 |
+|---|---|---|
+| 桌宠右键面板 | **右键点击桌宠本体** → 设置 | 镜像翻转、大小、吸附强度、气泡开关、气泡大小、分级字体排版、透明度、音效开关/音量、语音开关、语音语言（中文/日语）、语音音量；底部还有「重置位置」和「完成」 |
+| DSH 设置页 | **DSH 设置 → 可露希尔桌宠**（不是右键面板） | 余额不足阈值、闲时对话间隔、闲时对话触发概率；`Idle` / `Sad_Idle` / `Think_Idle` 闲时对话池；到账、峰时、谷时、余额不足、对话中断、出错、工具成功、本轮结束等特殊事件对话池；点击交互对话池（通用池 + `Idle` / `Sad_Idle` / `Think_Idle` 三种状态池）；底部「关闭」 |
+
+点击交互时，从**通用池 + 当前基础状态对应的状态池**合并抽取：`Idle` 状态用 `interactIdle`，`Sad_Idle` 用 `interactSadIdle`，`Think_Idle` 用 `interactThinkIdle`。三个状态池最初是从对应闲时对话池增量复制的，可以分别编辑。
+
+右键面板适合临时的显示与声音调整；DSH 设置页适合低频的计费阈值、闲时节奏和台词库维护。两处修改都会写入 `$DSH_HOME/.dshcl.json`，刷新或重载后保留。
+
+---
+
+## 效果预览
+
+<div align="center">
+
+<img src="docs/preview/state-transition.gif" alt="idle / sad / think 状态与转场" width="360" />
+
+<img src="docs/preview/bubble-settings.gif" alt="像素气泡、计费提示与右键设置面板" width="640" />
+
+<img src="docs/preview/interaction.gif" alt="点击交互与事件反馈" width="360" />
+
+</div>
+
+- **状态与转场**：`idle` / `sad` / `think` 基础状态，以及 `Sad_Begin` / `Think_Begin` 的正放进入、倒放退出衔接。
+- **气泡、计费与设置**：像素气泡展示余额、当日花费、峰谷价与随机台词；右键面板可调镜像、大小、吸附、气泡、透明度、音效和语音。
+- **交互与事件**：点击触发 `interact`，到账、峰谷、低余额等事件按优先级排队播放并弹出对应提示。
+
+---
+
+## 项目结构
+
+```text
+├── cordis.patch.yml            # Cordis bundle 入口配置
+├── docs/
+│   ├── state-machine.md        # 状态机设计稿、状态表、优先级与测试矩阵
+│   └── preview/                # README 预览截图与动图（无头浏览器实际截图 + 当前动画素材）
+├── lib/
+│   ├── index.js                # 宿主装配入口与计费/节假日常量
+│   ├── store.js                # 运行时状态、花费累计、持久化与余额轮询
+│   ├── events.js               # DSH 事件监听与分发
+│   ├── routes.js               # HTTP 路由（/ping、/state、/config、/assets/*）
+│   ├── period.js               # 峰谷时段判定（北京时间）
+│   ├── billing.js              # 计费价目与单条消息花费计算（纯函数）
+│   └── client.js               # esbuild 打包生成的自包含客户端 bundle（勿手改）
+├── assets/
+│   ├── src/                    # 客户端源码（打包进 lib/client.js）
+│   │   ├── client-entry.js     # bundle 入口，注册 factory / slot
+│   │   ├── main.js             # DOM、位置、交互与模块装配
+│   │   ├── core/               # 常量、日志、设置读写与持久化
+│   │   ├── shared/             # 前后端共享协议与设置归一化
+│   │   ├── render/             # 静态命中区掩码与 A/B 双缓冲透明视频播放器
+│   │   ├── anim/               # 片段库、状态注册表、状态机、运行时与 notice 类
+│   │   ├── config/dialogues.json # 默认对话池配置
+│   │   ├── ui/                 # 布局、设置面板、像素气泡、DSH 设置页、谷价贴画
+│   │   ├── input/drag.js       # 点击、拖拽锁定与右键交互
+│   │   └── io/state.js         # 宿主状态轮询与事件分发
+│   ├── video/                  # 888×748 WebM VP9-Alpha 透明动画素材
+│   ├── fonts/                  # Ark Pixel 12px 字体与 OFL 声明
+│   └── audio/                  # click / fail / coin / turnfail 音效（Opus 56k）
+└── tests/                      # node --test 单元测试与接线验证
+```
+
+---
+
+## 开发与验证
+
+### 改动生效对照
+
+| 改动范围 | 生效方式 |
 |---|---|
-| `assets/src/**` | `npm run build:client` 后页面 **Ctrl+R** |
-| `assets/video/**`、`assets/audio/**`、字体 | 页面 **Ctrl+R** |
-| `lib/index.js` | 插件管理里关→开（重新 import 模块） |
-| `lib/client.js` | 由 `npm run build:client` 生成，不手改 |
+| `assets/src/**` | 执行 `npm run build:client` 后刷新页面（`Ctrl+R`） |
+| `assets/video/**`、`assets/audio/**`、`assets/fonts/**` | 刷新页面（`Ctrl+R`） |
+| `lib/index.js` 及其他 `lib/*.js`（除 `lib/client.js`） | 在插件管理中停用再启用以重新导入模块 |
+| `lib/client.js` | 由 `npm run build:client` 自动生成，不手动修改 |
 | `cordis.patch.yml` | 重启 DSH |
 
-> 客户端 bundle 由 DSH 以 `/plugins/dsh-closure-pet/client.js` 提供，热启用/停用无需刷新页面；改了源码就要先重新构建 bundle，再 Ctrl+R。
+> 客户端 bundle 由 DSH 通过 `/plugins/dsh-closure-pet/client.js` 提供；启用或停用插件通常无需整页刷新，但修改前端源码后必须先重新构建 bundle 再刷新页面。
 
-测试（零依赖，Node 内置 runner）：
+### 运行测试
 
 ```bash
-node --test "tests/*.test.mjs"   # 或 npm test
+node --test "tests/*.test.mjs"
 ```
 
-- `tests/host-pure.test.mjs`：峰谷/节假日、计费、北京时间归日
-- `tests/frontend-pure.test.mjs`：常量、设置合并、静态命中区、片段表、音效/布局工厂
-- `tests/frontend-wiring.test.mjs`：DOM 桩下创建面板/气泡/贴画/导演/状态/拖拽，验证依赖注入与监听注册
-- `tests/state-machine.test.mjs`：状态机全量回归（base / work / overlay 的所有衔接）
-- `tests/video-player.test.mjs`：同名覆盖动画播完后再次触发必须从头重启并重新触发 ended
-- `tests/client-artifact.test.mjs`：`lib/client.js` 是自包含 bundle，注册 `shell.overlay` 且不依赖注入回退
+测试套件覆盖以下内容：
 
-调试接口挂在 `window.__dshClosurePet`：`play(name)`、`showBubble()`、`settings`、`layers`、`debug`、`startup`、`dispose()` 等。
+* `tests/host-pure.test.mjs`：峰谷时段、节假日归日、计费纯函数与北京时间处理
+* `tests/frontend-pure.test.mjs`：常量、设置合并、静态命中区、片段表及工厂模块
+* `tests/frontend-wiring.test.mjs`：DOM 桩环境下的面板、气泡、贴画、状态与拖拽接线验证
+* `tests/state-machine.test.mjs`：基础状态、工作态与覆盖层衔接回归
+* `tests/video-player.test.mjs`：同名动画连续触发时的重播与 `ended` 事件行为
+* `tests/client-artifact.test.mjs`：`lib/client.js` 自包含性及 `shell.overlay` 注册校验
 
-## 客户端插件
+---
 
-只有一条加载路径：`package.json` 的 `dsh.client` 把 `lib/client.js` 注册为客户端 bundle，DSH 以 `/plugins/dsh-closure-pet/client.js` 提供并执行它；bundle 自己把组件注册到 `shell.overlay`（frame-wide 浮层），组件挂载时调用 `startPet()` 创建桌宠，卸载时调用返回的 `dispose()`。
+## 仓库趋势与贡献者
 
-- 不再有 `webserver/index-inject` 注入行，也不再有 `/pet.js` 回退路径；
-- bundle 是自包含的，不从宿主路由动态 import 前端代码，热启用不依赖宿主路由时序；
-- `window.__dshClosurePet` 仍是调试入口，`dispose()` 可手动卸载（停视频、清定时器、移除监听与 DOM）。
+<div align="center">
 
-## 动画状态机
+[![Star History Chart](https://api.star-history.com/svg?repos=fengshiyangrouguan/dsh-closure-pet&type=Date)](https://star-history.com/#fengshiyangrouguan/dsh-closure-pet&Date)
 
-目标模型是 v3.1，3.1.0 已接入核心状态机、零样本语音与独立语音设置（设置页与部分数值调优仍待补）：
+<br />
 
-- 基础状态注册：`idle` / `sad` / `think`，每个状态自带 loop、enter 槽、exit 槽；以后加新状态只注册，不改核心分支。
-- 三种基础状态之间的进入/退出全部由 `Sad_Begin` / `Think_Begin` 完成：正放进入，倒放退出；Sad ↔ Think 经 Idle 中转。
-- 需要两段转场的跨状态由底层自动倍速；离开 Idle 前要求 Idle 完整播完一轮。
-- 事件注册：事件名描述事实，视频可以一个或多个、均匀随机。例如 `credited → celebrate`、`valley_time → happy`、`peak_time → sad_begin（一段难过表情）`、`turn-interrupted → sad_begin`、`interact → interact_1 / interact_2`。
-- 每个事件带一个 `notice` 类实例：可以在 `build(ctx)` 里查询余额/峰谷、拼动态富文本、按状态选对话池；通知不再单独注册。
-- `lowBalance` 也是普通 one-shot：20 优先级、排队、暂时没有动画（`textOnly`），`LowBalanceNotice` 只发通知、不改任何动画状态。
-- 闲时对话 `idleChatter` 也是 one-shot：绑定 `talk`、0 优先级、不排队；`IdleChatterNotice` 按当前 base 从 Idle / Sad_Idle / Think_Idle 的独立池里随机。
-- 事件进入一律交叉淡化；同优先级排队，低优先级事件可按注册配置是否排队；事件结束回 base 时播目标状态的 enter，没有 enter 就跳过。
-- 思考不再掷骰、不再播完整 `Special_B`：`Special_B` 已拆成 `think_Begin` + `think_Idle`，原段仅作素材备份。
-- 不再有 `talkLock`、`startupHold`、`enteringSad`、`afterOverlay` 这些跨函数标志；只有一个 active 片段、一个 `seq`、一个纯 `resolve()`。
+<a href="https://github.com/fengshiyangrouguan/dsh-closure-pet/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=fengshiyangrouguan/dsh-closure-pet" alt="Contributors" />
+</a>
 
-完整设计、注册表、优先级、设置页与测试矩阵见 [docs/state-machine.md](docs/state-machine.md)。
+</div>
 
-触发源：`agent/assistant-stream`、`tools/result`、`agent/error`、`agent/status`、`session/event`（`assistant/message` 计费、`turn/end` 结束）、账户余额（60s 轮询）。
+### 参与贡献（All Contributors）
 
-## 开屏演出
+欢迎提交 Issue 或 Pull Request 完善状态机、计费适配、文档或测试用例。如果你参与了以下任意类型的贡献，都欢迎在 PR 中说明以便归档：
 
-开屏不是独立事件，而是 **峰谷价在启动时的一次检定**：首次拿到 `/state` 后等待 5 秒（`localStorage['dshcl-startup-delay']` 可改），随后触发 `peak_time` / `valley_time`，走和运行中完全相同的事件路径，没有单独的 startup 事件层。
+| 贡献类型 | 标识 | 说明 |
+|---|---|---|
+| 代码实现 | 💻 | 宿主逻辑、客户端渲染、状态机与测试 |
+| 文档与说明 | 📖 | README、`docs/state-machine.md`、`NOTICE.md` 等 |
+| 问题反馈与排查 | 🐛 | 提交复现步骤明确的 Issue 或定位原因 |
+| 翻译与文案 | 🌍 | 对话池文案、日文翻译与提示文本 |
 
-1. 峰价播 `peak_time`（一段 `sad_begin` 难过表情），谷价播 `valley_time`（`happy`）；
-2. 余额偏低：`lowBalance` 作为 20 优先级、排队的 textOnly 事件出队，只发催款文本；
-3. 演完按最新目标回到 `Idle` / `Sad_Idle` / `Think_Idle`，不再有 2 秒空档和 `startupHold`。
+---
 
-## 设置
+## 许可证
 
-右键桌宠 → 设置保留高频项：镜像、大小、吸附强度（0%–200%，0% 关闭）、气泡开关、气泡大小（50%–200%，100% 为基准）、更多层次的字体视觉效果（分级排版，默认开）、透明度、音效开关与音量、语音开关、语音语言（中文/日语）与独立语音音量。
-
-## 语音
-
-桌宠台词支持零样本语音，中文原台词和日语翻译各生成一份 OGG，统一放在 `assets/voice/`，由 `manifest.json` 绑定到中文原文。右键设置页可以开关语音、切换中文/日语、单独调节语音音量；开启后气泡会按 **语音时长 + 2 秒** 展示，没有语音时按可见字数计算（最短 4.2 秒）。语音是预生成资源，运行时不需要加载 CosyVoice。
-
-独立「可露希尔桌宠」设置页已接入：余额不足阈值、闲时对话间隔、按**基础状态分开**的闲时对话池（Idle / Sad_Idle / Think_Idle 各一份，不合并），以及按事件分的事件对话池；默认文案来自 `assets/src/config/dialogues.json`，设置页直接读取并允许增删改，修改后持久化到 `$DSH_HOME/.dshcl.json`（`settings` 与当日 `spend`）。
-
-## 拖拽
-
-按住桌宠后，页面交互会一直冻结到松手：文字选不中、图片/链接拖不走、下面的元素不 hover 也不会被点穿，指针滑过 iframe 也不会被里面的文档抢走。
-
-实现见 `assets/src/input/drag.js` 的 `beginDragLock` / `endDragLock`：
-
-- 命中桌宠的 `pointerdown`（window 捕获阶段）直接 `preventDefault + stopImmediatePropagation`（选区/焦点/原生拖拽都是这次按下的默认动作，页面也收不到这次按下）
-- 按下到松手之间，在捕获阶段拦掉 `mousedown` / `selectstart` / `dragstart`（`pointerdown` 的 `preventDefault` 不保证压掉兼容的 `mousedown`）
-- `<html>` 加 `dshcl-dragging`：`user-select:none` + `cursor:grabbing`
-- 铺一层透明挡板 `#dsh-closure-pet-drag-shield` 吃掉指针命中
-- 松手后吞掉浏览器合成的那一次 `click`（只吞一次，任何新的按下即撤销），避免拖到按钮/链接上松手就点出去
-- 窗口失焦 / 切后台 / `pointercancel` 会自动收尾，挡板不会残留
-
-## 性能
-
-- 角色不再逐帧绘制：视频由浏览器解码，主线程只处理位置与交互
-- 换片段走双缓冲：前台继续播，后台加载，就绪后再淡化，避免加载空档
-- 页面隐藏时暂停视频，状态轮询从 1s 降到 5s
-- 像素气泡按需创建；文本测量有缓存
-- 命中测试用**静态命中区**（11 个图元 → 128×108 掩码），按下只查表、不读 GPU
-
-## 峰谷时段维护
-
-规则：工作日 09:00–12:00、14:00–18:00 为峰价；其余时间、周末、法定节假日全天谷价，全部按北京时间判定。
-
-节假日表在 `lib/index.js` 的 `HOLIDAY_RANGES`（闭区间），当前收录 2026 全年与 2027 推定日期：
-
-- 官方每年 11 月左右公布下一年调休安排，公布后按实际日期改这两个年份的区间即可
-- 未收录的年份只会按“工作日 + 周末”计算（不会算错价，只是少认出节假日）
-- `/state` 里的 `holidaysOutdated` 表示当前年份不在表内，可用于提醒更新
-
-## 卸载
-
-1. 在插件管理里关掉（客户端 bundle 会随停用卸载；宿主代码改动才需要重启 DSH）
-2. 从 profile 的 `dependencies` 与 `dsh.profile.bundles` 里移除
-3. 可选：删掉 `$DSH_HOME/.dshcl.json`（设置与当日花费统计）
-
-前端没有常驻定时器跨页面残留；宿主侧的定时器与路由会在插件销毁时通过 `ctx.effect` 释放。
-
-## 计费口径
-
-`assistant/message` 的 `usage` → `cacheRead×谷/峰价 + input×未命中价 + output×输出价`，价目内置于 `lib/index.js`（每百万 token，`[谷价, 峰价]`）。峰谷按北京时间：周末与节假日全天谷价，工作日 09–12、14–18 为峰时。
-
-## 贡献
-
-- **IPC-Wolf**（<https://github.com/IPC-Wolf>）：拖动时气泡实时跟随与命中区 grab 光标；气泡分级排版、气泡缩放 100% 基准与使用源脚注；边缘吸附强度可调（0%–200%）。
+代码部分采用 [MIT License](LICENSE)；角色形象、借用音效、字体与衍生素材的权利与限制请参见顶部声明及 [`NOTICE.md`](NOTICE.md)。

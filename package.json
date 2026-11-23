@@ -1,6 +1,6 @@
 {
   "name": "dsh-closure-pet",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "可露希尔桌宠（基于游戏截图的二次创作）：透明动画、余额与花费提示",
   "type": "module",
   "main": "lib/index.js",

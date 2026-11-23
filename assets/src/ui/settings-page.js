@@ -6,9 +6,9 @@ import { PREFIX } from '../core/env.js'
 import { SETTINGS_DEFAULTS } from '../shared/protocol.js'
 
 const STATE_GROUPS = [
-  ['idle', 'Idle 闲时'],
-  ['sadIdle', 'Sad_Idle 闲时'],
-  ['thinkIdle', 'Think_Idle 闲时'],
+  ['idle', '闲时随机'],
+  ['sadIdle', '悲伤时随机'],
+  ['thinkIdle', '思考时随机'],
 ]
 
 const EVENT_GROUPS = [
@@ -20,7 +20,13 @@ const EVENT_GROUPS = [
   ['error', '出错'],
   ['toolSuccess', '工具成功'],
   ['turnEnd', '本轮结束'],
-  ['interact', '点击交互'],
+]
+
+const INTERACT_GROUPS = [
+  ['interact', '通用池'],
+  ['interactIdle', '闲时交互'],
+  ['interactSadIdle', '悲伤时交互'],
+  ['interactThinkIdle', '思考时交互'],
 ]
 
 export function makeSettingsSection(React) {
@@ -141,6 +147,15 @@ export function makeSettingsSection(React) {
 
       h('h3', { style: { margin: '26px 0 4px', fontSize: 16 } }, '闲时对话池'),
       STATE_GROUPS.map(([key, title]) =>
+        h(ListEditor, {
+          key: key, title: title,
+          value: (settings.dialogues && settings.dialogues[key]) || [],
+          onChange: (v) => patchDialogue(key, v),
+        })),
+
+      h('h3', { style: { margin: '26px 0 4px', fontSize: 16 } }, '点击交互对话池'),
+      h('p', { style: { margin: '0 0 8px', opacity: 0.62, fontSize: 12 } }, '每次点击从「通用池 + 当前状态池」中抽取；三种状态各有一份独立的闲时对话池。'),
+      INTERACT_GROUPS.map(([key, title]) =>
         h(ListEditor, {
           key: key, title: title,
           value: (settings.dialogues && settings.dialogues[key]) || [],

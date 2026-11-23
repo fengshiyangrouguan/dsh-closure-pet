@@ -92,7 +92,15 @@ export class ToolFailNotice {
 
 export class InteractNotice {
   build(ctx) {
-    const body = pick(pool(ctx, 'interact', DEFAULT_DIALOGUES.interact), ctx.lastText)
+    // 通用池 + 当前基础状态对应池；三种状态各有一份从闲时对话增量复制的池。
+    const stateKey = ctx && ctx.base === 'sad' ? 'interactSadIdle'
+      : ctx && ctx.base === 'think' ? 'interactThinkIdle'
+        : 'interactIdle'
+    const common = pool(ctx, 'interact', DEFAULT_DIALOGUES.interact)
+    const statePool = pool(ctx, stateKey, DEFAULT_DIALOGUES[stateKey] || [])
+    const seen = new Set(common)
+    const all = common.concat(statePool.filter((text) => !seen.has(text)))
+    const body = pick(all, ctx.lastText)
     // 交给气泡的“对话 + 完整信息”混合模式：对话第一行，后面接余额/花费/峰谷。
     return body ? { dialog: body, sound: 'click' } : null
   }
