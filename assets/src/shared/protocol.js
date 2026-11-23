@@ -24,8 +24,8 @@ export const SNAP_STRENGTH_MAX = 200
 
 // 设置页低频项
 export const LOW_THRESHOLD_DEFAULT = 10
-export const IDLE_CHATTER_MINUTES_DEFAULT = 1
-export const IDLE_CHATTER_CHANCE_DEFAULT = 1
+export const IDLE_CHATTER_MINUTES_DEFAULT = 10
+export const IDLE_CHATTER_CHANCE_DEFAULT = 0.5
 export const DIALOGUE_KEYS = [
   'idle', 'sadIdle', 'thinkIdle',
   'lowBalance', 'credited', 'peakTime', 'valleyTime',

@@ -3,6 +3,7 @@
 
 import DEFAULT_DIALOGUES from '../config/dialogues.json' with { type: 'json' }
 import { PREFIX } from '../core/env.js'
+import { SETTINGS_DEFAULTS } from '../shared/protocol.js'
 
 const STATE_GROUPS = [
   ['idle', 'Idle 闲时'],
@@ -72,7 +73,7 @@ export function makeSettingsSection(React) {
     const api = window.__dshClosurePet
     const [settings, setSettings] = React.useState(function () {
       const base = api && api.settings ? api.settings : {}
-      return Object.assign({}, base, {
+      return Object.assign({}, SETTINGS_DEFAULTS, base, {
         dialogues: Object.assign({}, DEFAULT_DIALOGUES, base.dialogues || {}),
       })
     })
@@ -88,11 +89,8 @@ export function makeSettingsSection(React) {
           if (!alive) return
           const host = (cfg && cfg.settings) || {}
           const dialogues = Object.assign({}, DEFAULT_DIALOGUES, file || {}, host.dialogues || {})
-          setSettings(Object.assign({}, host, {
+          setSettings(Object.assign({}, SETTINGS_DEFAULTS, host, {
             dialogues,
-            idleChatterMinutes: host.idleChatterMinutes === undefined ? 1 : host.idleChatterMinutes,
-            idleChatterChance: host.idleChatterChance === undefined ? 1 : host.idleChatterChance,
-            lowThreshold: host.lowThreshold === undefined ? 10 : host.lowThreshold,
           }))
         })
         return function () { alive = false }
@@ -128,16 +126,16 @@ export function makeSettingsSection(React) {
       h('p', { style: { margin: '0 0 18px', opacity: 0.65, fontSize: 13 } }, '低频配置。大小、透明度、气泡样式仍在右键面板里。'),
 
       h(Field, {
-        label: '余额不足阈值', value: settings.lowThreshold === undefined ? 10 : settings.lowThreshold,
+        label: '余额不足阈值', value: settings.lowThreshold === undefined ? SETTINGS_DEFAULTS.lowThreshold : settings.lowThreshold,
         min: 0, step: 1, onChange: (v) => patch({ lowThreshold: v }), hint: '元',
       }),
       h(Field, {
-        label: '闲时对话间隔', value: settings.idleChatterMinutes === undefined ? 10 : settings.idleChatterMinutes,
+        label: '闲时对话间隔', value: settings.idleChatterMinutes === undefined ? SETTINGS_DEFAULTS.idleChatterMinutes : settings.idleChatterMinutes,
         min: 0, step: 1, onChange: (v) => patch({ idleChatterMinutes: v }), hint: '分钟；0 = 关闭',
       }),
       h(Field, {
         label: '闲时对话触发概率',
-        value: Math.round((settings.idleChatterChance === undefined ? 0.5 : settings.idleChatterChance) * 100),
+        value: Math.round((settings.idleChatterChance === undefined ? SETTINGS_DEFAULTS.idleChatterChance : settings.idleChatterChance) * 100),
         min: 0, step: 5, onChange: (v) => patch({ idleChatterChance: Math.min(1, Math.max(0, v / 100)) }), hint: '%',
       }),
 

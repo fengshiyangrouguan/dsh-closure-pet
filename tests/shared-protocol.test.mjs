@@ -16,7 +16,7 @@ test('协议版本与路径', () => {
 test('设置默认值', () => {
   assert.deepEqual({ ...SETTINGS_DEFAULTS }, {
     mirror: 'auto', size: 1, bubble: true, bubbleScale: 100, bubbleTiers: true, snapStrength: 200, opacity: 1, sound: true, volume: 0.7,
-    lowThreshold: 10, idleChatterMinutes: 1, idleChatterChance: 1, dialogues: {},
+    lowThreshold: 10, idleChatterMinutes: 10, idleChatterChance: 0.5, dialogues: {},
   })
   assert.ok(SIZE_MIN < SIZE_MAX)
   assert.ok(OPACITY_MIN >= 0 && OPACITY_MIN < 1)
