@@ -100,6 +100,7 @@
 
 * **拖拽防误触锁定**：按下桌宠后在 window 捕获阶段拦截 `pointerdown`、`mousedown`、`selectstart`、`dragstart`，为 `<html>` 加上 `dshcl-dragging` 样式（`user-select:none`、`cursor:grabbing`），并铺设 `#dsh-closure-pet-drag-shield` 遮罩层防止点穿或被 iframe 抢焦点；松手后吞掉单次合成 `click`，失焦、切后台或 `pointercancel` 时自动清理。
 * **桌面右键设置**：支持镜像翻转、缩放大小、吸附强度（`0%–200%`，`0%` 关闭）、气泡开关与大小（`50%–200%`）、分级字体排版（默认开启）、透明度、音效开关/音量，以及语音开关、语言（中文/日语）与独立音量。入口与完整设置项见[设置入口](#设置入口)。
+* **硬件状态挂牌**：右键开启后显示 CPU / 内存 / NVIDIA GPU 用量、显存与温度；默认挂在桌宠下方，可在右键面板切换上方。更换为更适配的主题风格，页面关闭、页面隐藏或切换到屏保时停止采样。
 * **轻量渲染**：角色由浏览器直接解码 `888×748` 的 WebM VP9-Alpha 视频，不再逐帧重绘，也不依赖 WebGPU；页面隐藏时暂停视频播放，并将状态轮询间隔从 1 秒放宽至 5 秒。
 
 ### 设置入口
@@ -108,8 +109,8 @@
 
 | 入口 | 打开方式 | 主要设置项 |
 |---|---|---|
-| 桌宠右键面板 | **右键点击桌宠本体** → 设置 | 镜像翻转、大小、吸附强度、气泡开关、气泡大小、分级字体排版、透明度、音效开关/音量、语音开关、语音语言（中文/日语）、语音音量；底部还有「重置位置」和「完成」 |
-| DSH 设置页 | **DSH 设置 → 可露希尔桌宠**（不是右键面板） | 余额不足阈值、闲时对话间隔、闲时对话触发概率；`Idle` / `Sad_Idle` / `Think_Idle` 闲时对话池；到账、峰时、谷时、余额不足、对话中断、出错、工具成功、本轮结束等特殊事件对话池；点击交互对话池（通用池 + `Idle` / `Sad_Idle` / `Think_Idle` 三种状态池）；底部「关闭」 |
+| 桌宠右键面板 | **右键点击桌宠本体** → 设置 | 镜像翻转、大小、吸附强度、气泡开关、气泡大小、分级字体排版、透明度、音效开关/音量、语音开关、语音语言（中文/日语）、语音音量、硬件挂牌开关与位置（下方/上方）；底部还有「重置位置」和「完成」 |
+| DSH 设置页 | **DSH 设置 → 可露希尔桌宠**（不是右键面板） | 余额不足阈值、闲时对话间隔、闲时对话触发概率；`闲时随机` / `悲伤时随机` / `思考时随机` 三份闲时对话池；到账、峰时、谷时、余额不足、对话中断、出错、工具成功、本轮结束等特殊事件对话池；点击交互对话池（`通用池` + `闲时交互` / `悲伤时交互` / `思考时交互`）；底部「关闭」 |
 
 点击交互时，从**通用池 + 当前基础状态对应的状态池**合并抽取：`Idle` 状态用 `interactIdle`，`Sad_Idle` 用 `interactSadIdle`，`Think_Idle` 用 `interactThinkIdle`。三个状态池最初是从对应闲时对话池增量复制的，可以分别编辑。
 
@@ -146,7 +147,8 @@
 │   ├── index.js                # 宿主装配入口与计费/节假日常量
 │   ├── store.js                # 运行时状态、花费累计、持久化与余额轮询
 │   ├── events.js               # DSH 事件监听与分发
-│   ├── routes.js               # HTTP 路由（/ping、/state、/config、/assets/*）
+│   ├── routes.js               # HTTP 路由（/ping、/state、/config、/hardware、/assets/*）
+│   ├── hardware.js             # CPU / 内存 / GPU 采样（nvidia-smi 可选，失败降级）
 │   ├── period.js               # 峰谷时段判定（北京时间）
 │   ├── billing.js              # 计费价目与单条消息花费计算（纯函数）
 │   └── client.js               # esbuild 打包生成的自包含客户端 bundle（勿手改）
@@ -159,7 +161,7 @@
 │   │   ├── render/             # 静态命中区掩码与 A/B 双缓冲透明视频播放器
 │   │   ├── anim/               # 片段库、状态注册表、状态机、运行时与 notice 类
 │   │   ├── config/dialogues.json # 默认对话池配置
-│   │   ├── ui/                 # 布局、设置面板、像素气泡、DSH 设置页、谷价贴画
+│   │   ├── ui/                 # 布局、设置面板、像素气泡、DSH 设置页、谷价贴画、硬件挂牌
 │   │   ├── input/drag.js       # 点击、拖拽锁定与右键交互
 │   │   └── io/state.js         # 宿主状态轮询与事件分发
 │   ├── video/                  # 888×748 WebM VP9-Alpha 透明动画素材
@@ -195,8 +197,11 @@ node --test "tests/*.test.mjs"
 * `tests/host-pure.test.mjs`：峰谷时段、节假日归日、计费纯函数与北京时间处理
 * `tests/frontend-pure.test.mjs`：常量、设置合并、静态命中区、片段表及工厂模块
 * `tests/frontend-wiring.test.mjs`：DOM 桩环境下的面板、气泡、贴画、状态与拖拽接线验证
-* `tests/state-machine.test.mjs`：基础状态、工作态与覆盖层衔接回归
+* `tests/machine.test.mjs`：基础状态、工作态与覆盖层衔接回归
 * `tests/video-player.test.mjs`：同名动画连续触发时的重播与 `ended` 事件行为
+* `tests/hardware.test.mjs`：CPU/内存/GPU 采样、CSV 解析、缓存与无显卡降级
+* `tests/hardware-ui.test.mjs`：挂牌格式化、阈值与客户端/宿主一致性
+* `tests/plate-config.test.mjs`：宿主配置恢复挂牌开关与位置
 * `tests/client-artifact.test.mjs`：`lib/client.js` 自包含性及 `shell.overlay` 注册校验
 
 ---
@@ -225,7 +230,6 @@ node --test "tests/*.test.mjs"
 | 文档与说明 | 📖 | README、`docs/state-machine.md`、`NOTICE.md` 等 |
 | 问题反馈与排查 | 🐛 | 提交复现步骤明确的 Issue 或定位原因 |
 | 翻译与文案 | 🌍 | 对话池文案、日文翻译与提示文本 |
-
 ---
 
 ## 许可证

@@ -11,6 +11,7 @@ export function createBubble(deps) {
   var pet = deps.pet
   var size = deps.size
   var settings = deps.settings
+  var container = deps.container
 
   // ————————————————————— 气泡（像素风）—————————————————————
   // 结构：一个 fixed 容器里放「SVG 背景（像素边框 + 硬阴影）+ 文本层」，
@@ -98,7 +99,7 @@ export function createBubble(deps) {
     bubbleEl = document.createElement('div')
     bubbleEl.id = 'dsh-closure-pet-bubble'
     bubbleEl.style.cssText = [
-      'position:fixed', 'left:0', 'top:0', 'z-index:2147481999',
+      'position:fixed', 'left:0', 'top:0', 'z-index:2147482002',
       'pointer-events:none', 'opacity:0',
       'transform-origin:center bottom',
       'filter:none',
@@ -121,7 +122,7 @@ export function createBubble(deps) {
     ].join(';')
     bubbleEl.appendChild(bubbleTextEl)
 
-    document.body.appendChild(bubbleEl)
+    ;(container || document.body).appendChild(bubbleEl)
   }
 
   // 单行最大宽度（CSS px，100% 基准）。24px 像素字体下一个汉字正好 24px，

@@ -37,6 +37,7 @@ import { createLayout } from './ui/layout.js'
 import { createPanel } from './ui/panel.js'
 import { createBubble } from './ui/bubble.js'
 import { createSticker } from './ui/sticker.js'
+import { createPlate } from './ui/plate.js'
 import { createDrag } from './input/drag.js'
 import { createRuntime } from './anim/runtime.js'
 import DEFAULT_DIALOGUES from './config/dialogues.json' with { type: 'json' }
@@ -129,7 +130,8 @@ export function startPet(mountContainer) {
   var layoutUi = createLayout({ host: host, canvas: stage, settings: settings, pet: pet })
   var size = layoutUi.size
   var clampPos = layoutUi.clampPos
-  var applyPosition = layoutUi.applyPosition
+  var applyPositionRaw = layoutUi.applyPosition
+  function applyPosition() { applyPositionRaw(); followPlate() }
   var setFlipped = layoutUi.setFlipped
   var applyOpacity = layoutUi.applyOpacity
   var resolveFlip = layoutUi.resolveFlip
@@ -137,8 +139,10 @@ export function startPet(mountContainer) {
   var loadPos = layoutUi.loadPos
   var savePos = layoutUi.savePos
   var placeFromStorage = layoutUi.placeFromStorage
-  var repositionForAnchor = layoutUi.repositionForAnchor
-  var settle = layoutUi.settle
+  var repositionForAnchorRaw = layoutUi.repositionForAnchor
+  function repositionForAnchor() { repositionForAnchorRaw(); followPlate() }
+  var settleRaw = layoutUi.settle
+  function settle() { settleRaw(); followPlate() }
 
   // ————————————————————— 命中测试（静态命中区）—————————————————————
   // 图元定义与栅格化在 render/hit-test.js；这里只做屏幕坐标 → 归一化 → 镜像 → 查表。
@@ -178,14 +182,17 @@ export function startPet(mountContainer) {
   function start() {
     host.style.opacity = '1'
     window.__dshClosurePet.phase = 'running'
+    if (plateApi) plateApi.start()
   }
 
   function stop() {
     player.pause()
+    if (plateApi) plateApi.pause()
   }
 
   function resumeAnimation() {
     player.resume()
+    if (plateApi) plateApi.resume()
   }
 
   // 页面卸载 / 客户端插件销毁时调用：撤掉监听、定时器与 DOM，可重复调用。
@@ -197,6 +204,7 @@ export function startPet(mountContainer) {
     try { if (dragApi) dragApi.dispose() } catch (err) {}
     try { if (bubbleApi) bubbleApi.dispose() } catch (err) {}
     try { if (stickerApi) stickerApi.dispose() } catch (err) {}
+    try { if (plateApi) plateApi.dispose() } catch (err) {}
     try { if (panelUi) panelUi.dispose() } catch (err) {}
     try { runtime.dispose() } catch (err) {}
     try { player.dispose() } catch (err) {}
@@ -214,6 +222,11 @@ export function startPet(mountContainer) {
   function closePanel() { if (panelUi) panelUi.close() }
   function panelIsOpen() { return panelUi ? panelUi.isOpen() : false }
   function insidePanel(target) { return panelUi ? panelUi.contains(target) : false }
+
+  // ————————————————————— 硬件挂牌 —————————————————————
+  var plateApi = null
+  function applyPlate() { if (plateApi) plateApi.applySettings() }
+  function followPlate() { if (plateApi) plateApi.follow() }
 
   // ————————————————————— 交互：点击 / 拖拽 / 右键 —————————————————————
   // 实现在 input/drag.js；监听在组合阶段注册。
@@ -317,15 +330,20 @@ export function startPet(mountContainer) {
     settings: settings, saveSettings: saveSettings, resolveFlip: resolveFlip,
     layout: layout, repositionForAnchor: repositionForAnchor, applyOpacity: applyOpacity,
     hideBubble: hideBubble, refreshBubble: refreshBubble, audioEnsure: audioEnsure, loadSounds: loadSounds, playSound: playSound,
-    size: size, pet: pet, resetPosition: resetPosition,
+    size: size, pet: pet, resetPosition: resetPosition, applyPlate: applyPlate,
   })
+  // 浮动 UI（气泡 / 挂牌）放进桌宠的挂载容器，和桌宠共享 stacking context；
+  // 不要再 append 到 body，否则会越过 DSH 设置页的层级。
+  var petOverlayRoot = host.parentNode || document.body
   bubbleApi = createBubble({
     getState: function () { return stateApi ? stateApi.getState() : null }, pet: pet, size: size, settings: settings,
     voiceDuration: function (text) { return voice ? voice.duration(text) : 0 },
+    container: petOverlayRoot,
   })
   stickerApi = createSticker({
     getState: function () { return stateApi ? stateApi.getState() : null }, pet: pet, size: size, settings: settings,
   })
+  plateApi = createPlate({ settings: settings, pet: pet, size: size, container: petOverlayRoot })
   stateApi = createState({
     runtime: runtime,
     refreshBubble: refreshBubble, playSound: playSound,
@@ -333,6 +351,7 @@ export function startPet(mountContainer) {
     settings: settings, saveSettings: saveSettings,
     layout: layout, repositionForAnchor: repositionForAnchor,
     resolveFlip: resolveFlip, applyOpacity: applyOpacity,
+    applyPlate: applyPlate,
     isBubbleShown: function () { return !!(bubbleApi && bubbleApi.isShown()) },
   })
   dragApi = createDrag({
@@ -365,7 +384,7 @@ export function startPet(mountContainer) {
         segments: function () { return [] },
         openPanel: openPanel,
         closePanel: closePanel,
-        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume, lowThreshold: settings.lowThreshold, idleChatterMinutes: settings.idleChatterMinutes, idleChatterChance: settings.idleChatterChance, dialogues: settings.dialogues || {} } },
+        get settings() { return { mirror: settings.mirror, size: settings.size, bubble: settings.bubble, bubbleScale: settings.bubbleScale, bubbleTiers: settings.bubbleTiers, snapStrength: settings.snapStrength, opacity: settings.opacity, sound: settings.sound, volume: settings.volume, lowThreshold: settings.lowThreshold, idleChatterMinutes: settings.idleChatterMinutes, idleChatterChance: settings.idleChatterChance, plate: settings.plate, platePosition: settings.platePosition, dialogues: settings.dialogues || {} } },
         setSettings: function (patch, persist) {
           if (patch) {
             if (patch.mirror) settings.mirror = patch.mirror
@@ -389,6 +408,8 @@ export function startPet(mountContainer) {
             if (patch.lowThreshold !== undefined) settings.lowThreshold = Math.max(0, Number(patch.lowThreshold))
             if (patch.idleChatterMinutes !== undefined) settings.idleChatterMinutes = Math.max(0, Number(patch.idleChatterMinutes))
             if (patch.idleChatterChance !== undefined) settings.idleChatterChance = Math.min(1, Math.max(0, Number(patch.idleChatterChance)))
+            if (typeof patch.plate === 'boolean') settings.plate = patch.plate
+            if (patch.platePosition === 'top' || patch.platePosition === 'bottom') settings.platePosition = patch.platePosition
             if (patch.idleChatterMinutes !== undefined || patch.idleChatterChance !== undefined) {
               runtime.setIdleChatterConfig(settings.idleChatterMinutes, settings.idleChatterChance)
             }
@@ -397,6 +418,7 @@ export function startPet(mountContainer) {
           saveSettings(persist !== false); layout(); repositionForAnchor(); resolveFlip(); applyOpacity()
           if (bubbleApi && bubbleApi.isShown()) refreshBubble()
           if (!settings.bubble) hideBubble()
+          applyPlate()
         },
         resetPosition: resetPosition,
         hitTest: hitTest,
@@ -425,6 +447,7 @@ export function startPet(mountContainer) {
             hitMask: { w: HIT_MASK_W, h: HIT_MASK_H, ready: !!hitMask, grow: HIT_GROW, forms: HIT_FORMS.length },
             settings: { mirror: settings.mirror, size: settings.size },
             clips: Object.keys(CLIPS).length,
+            plate: plateApi ? plateApi.debug() : null,
           }
         },
         dispose: dispose,

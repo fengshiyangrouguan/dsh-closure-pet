@@ -17,6 +17,7 @@ test('manifest: dsh.client, ./client and version', () => {
 })
 
 test('客户端产物：注册 shell.overlay 与 settings.section', () => {
+  assert.ok(clientSrc.includes('data-cl-pet-plate'), 'bundle 应包含硬件挂牌')
   let def = null
   const fakeWindow = { __ModuleLoader__: { load(d) { def = d } } }
   new Function('window', clientSrc)(fakeWindow)

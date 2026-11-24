@@ -21,6 +21,7 @@ export function createPanel(deps) {
   var size = deps.size
   var pet = deps.pet
   var resetPosition = deps.resetPosition
+  var applyPlate = deps.applyPlate
 
   // ————————————————————— 设置面板 —————————————————————
   var panel = null
@@ -30,7 +31,7 @@ export function createPanel(deps) {
     panel = document.createElement('div')
     panel.id = 'dsh-closure-pet-settings'
     panel.style.cssText = [
-      'position:fixed', 'z-index:2147482001', 'display:none',
+      'position:fixed', 'z-index:2147482003', 'display:none',
       'pointer-events:auto', 'min-width:196px', 'padding:10px 12px',
       'border-radius:10px', 'font:12px/1.6 ui-sans-serif,system-ui,"Microsoft YaHei",sans-serif',
       'background:rgba(26,28,36,.97)', 'color:#e7eaf3',
@@ -327,6 +328,52 @@ export function createPanel(deps) {
     voiceVolWrap.appendChild(voiceVolText)
     voiceVolRow.appendChild(voiceVolWrap)
 
+    // 硬件挂牌：开关 + 在桌宠上方/下方
+    var plateRow = row('硬件挂牌')
+    var plateBtn = document.createElement('button')
+    plateBtn.style.cssText = 'padding:3px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.18);' +
+      'background:rgba(255,255,255,.06);color:#dfe4f0;font:inherit;cursor:pointer'
+    function syncPlateBtn() {
+      plateBtn.textContent = settings.plate ? '开' : '关'
+      plateBtn.style.background = settings.plate ? 'rgba(125,134,255,.85)' : 'rgba(255,255,255,.06)'
+      plateBtn.style.color = settings.plate ? '#fff' : '#dfe4f0'
+    }
+    plateBtn.addEventListener('click', function () {
+      settings.plate = !settings.plate
+      syncPlateBtn()
+      saveSettings(true)
+      if (applyPlate) applyPlate()
+    })
+    syncPlateBtn()
+    plateRow.appendChild(plateBtn)
+
+    var platePosRow = row('挂牌位置')
+    var platePosBox = document.createElement('span')
+    platePosBox.style.cssText = 'display:inline-flex;border:1px solid rgba(255,255,255,.18);border-radius:7px;overflow:hidden'
+    var platePosButtons = {}
+    ;[['bottom', '下方'], ['top', '上方']].forEach(function (pair) {
+      var btn = document.createElement('button')
+      btn.textContent = pair[1]
+      btn.style.cssText = 'padding:3px 9px;border:0;background:transparent;color:#cfd6e6;font:inherit;cursor:pointer'
+      btn.addEventListener('click', function () {
+        settings.platePosition = pair[0]
+        syncPlatePosition()
+        saveSettings(true)
+        if (applyPlate) applyPlate()
+      })
+      platePosButtons[pair[0]] = btn
+      platePosBox.appendChild(btn)
+    })
+    function syncPlatePosition() {
+      Object.keys(platePosButtons).forEach(function (key) {
+        var on = settings.platePosition === key
+        platePosButtons[key].style.background = on ? 'rgba(125,134,255,.85)' : 'transparent'
+        platePosButtons[key].style.color = on ? '#fff' : '#cfd6e6'
+      })
+    }
+    syncPlatePosition()
+    platePosRow.appendChild(platePosBox)
+
     // 操作
     var actions = document.createElement('div')
     actions.style.cssText = 'display:flex;gap:8px;margin-top:9px'
@@ -351,6 +398,8 @@ export function createPanel(deps) {
       syncVoiceBtn: syncVoiceBtn,
       syncVoiceLang: syncVoiceLang,
       syncVoiceVolume: syncVoiceVolume,
+      syncPlateBtn: syncPlateBtn,
+      syncPlatePosition: syncPlatePosition,
       slider: slider,
       sizeText: sizeText,
       snapSlider: snapSlider,
@@ -375,6 +424,8 @@ export function createPanel(deps) {
       panelApi.syncVoiceBtn()
       panelApi.syncVoiceLang()
       panelApi.syncVoiceVolume()
+      panelApi.syncPlateBtn()
+      panelApi.syncPlatePosition()
     }
     panel.style.display = 'block'
     // 放在桌宠上方；下方放不下就放下方
